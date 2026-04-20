@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>LCStool — Pipeline, Functions, Demos, and How to Use</title>
+<style>
+  :root {
+    --fg: #222;
+    --bg: #fbfaf7;
+    --muted: #666;
+    --accent: #1b6ca8;
+    --accent-soft: #e8f1f8;
+    --code-bg: #2e3440;
+    --code-fg: #eceff4;
+    --border: #d9d4c8;
+    --warn-bg: #fff5d6;
+    --warn-border: #e0b84a;
+    --tip-bg: #e8f5ea;
+    --tip-border: #5ca878;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--fg);
+    background: var(--bg);
+    margin: 0;
+    padding: 0;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 2rem 1.25rem 5rem; }
+  header {
+    border-bottom: 2px solid var(--accent);
+    padding-bottom: 1rem;
+    margin-bottom: 2rem;
+  }
+  header h1 { margin: 0 0 .25rem; font-size: 2rem; color: var(--accent); }
+  header p.sub { margin: 0; color: var(--muted); font-style: italic; }
+  h2 {
+    color: var(--accent);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: .25rem;
+    margin-top: 2.5rem;
+  }
+  h3 { margin-top: 2rem; color: #333; }
+  h4 { margin-bottom: .25rem; color: #444; }
+  nav.toc {
+    background: var(--accent-soft);
+    border-left: 4px solid var(--accent);
+    padding: .75rem 1.25rem;
+    margin-bottom: 2rem;
+    border-radius: 3px;
+  }
+  nav.toc ol { margin: .25rem 0; padding-left: 1.5rem; }
+  nav.toc li { margin: .15rem 0; }
+  nav.toc a { color: var(--accent); text-decoration: none; }
+  nav.toc a:hover { text-decoration: underline; }
+  code {
+    font-family: "Consolas", "Menlo", "Courier New", monospace;
+    font-size: 0.92em;
+    background: #f0ece2;
+    color: #a04040;
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: .9rem 1rem;
+    border-radius: 5px;
+    overflow-x: auto;
+    font-size: .88em;
+    line-height: 1.4;
+  }
+  pre code { background: transparent; color: inherit; padding: 0; }
+  .kw { color: #81a1c1; }
+  .str { color: #a3be8c; }
+  .com { color: #a2a597; font-style: italic; }
+  .num { color: #d08770; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1rem 0;
+    background: white;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: .5rem .7rem;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: var(--accent-soft); color: var(--accent); }
+  tr:nth-child(even) td { background: #faf7f0; }
+  .fn-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    padding: .8rem 1rem;
+    margin: .8rem 0;
+    border-radius: 3px;
+  }
+  .fn-card h4 { margin-top: 0; font-family: "Consolas", monospace; color: var(--accent); }
+  .fn-card .role { color: var(--muted); font-size: .88em; margin-bottom: .3rem; font-style: italic; }
+  .fn-card dl { margin: .4rem 0 0; }
+  .fn-card dt { font-weight: bold; margin-top: .4rem; font-size: .9em; }
+  .fn-card dd { margin: .15rem 0 0 1rem; font-size: .95em; }
+  .tip, .warn {
+    padding: .6rem 1rem;
+    border-radius: 4px;
+    margin: 1rem 0;
+  }
+  .tip { background: var(--tip-bg); border-left: 4px solid var(--tip-border); }
+  .warn { background: var(--warn-bg); border-left: 4px solid var(--warn-border); }
+  .pipeline-diagram {
+    background: white;
+    border: 1px solid var(--border);
+    padding: 1rem;
+    border-radius: 5px;
+    text-align: center;
+    font-family: "Consolas", monospace;
+    font-size: .9em;
+    white-space: pre;
+    overflow-x: auto;
+  }
+  .math { font-style: italic; }
+  .sub-tag { display: inline-block; font-size: .75em; padding: 1px 6px; background: #ddd; border-radius: 9px; margin-left: .3rem; color: #555; }
+  .tag-hyp { background: #fadcdc; color: #8b2929; }
+  .tag-ell { background: #dff0d8; color: #2e5a2e; }
+  .tag-util { background: #e0e0e0; color: #444; }
+  .tag-plot { background: #e0dcf0; color: #4a3f7a; }
+  footer { margin-top: 4rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--muted); font-size: .85em; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>LCStool — A Practical Guide</h1>
+  <p class="sub">Computing Lagrangian Coherent Structures in 2D flows with the ETH Zürich MATLAB toolbox (v1.0).</p>
+</header>
+
+<nav class="toc">
+  <strong>Contents</strong>
+  <ol>
+    <li><a href="#intro">Introduction &amp; theory refresher</a></li>
+    <li><a href="#pipeline">The end-to-end pipeline</a></li>
+    <li><a href="#functions">Function-by-function reference</a>
+      <ol>
+        <li><a href="#fn-grid">Grid &amp; flow integration</a></li>
+        <li><a href="#fn-cg">Cauchy-Green strain &amp; FTLE</a></li>
+        <li><a href="#fn-hyp">Hyperbolic LCS (shrink / stretch lines)</a></li>
+        <li><a href="#fn-ell">Elliptic LCS (λ-lines, Poincaré)</a></li>
+        <li><a href="#fn-util">Utilities, plotting, diagnostics</a></li>
+      </ol>
+    </li>
+    <li><a href="#demos">The three demo cases</a>
+      <ol>
+        <li><a href="#demo-dg">Double Gyre</a></li>
+        <li><a href="#demo-bj">Bickley Jet</a></li>
+        <li><a href="#demo-od">Ocean Dataset</a></li>
+      </ol>
+    </li>
+    <li><a href="#howto">How to use LCStool on your own velocity field</a></li>
+    <li><a href="#pitfalls">Common pitfalls &amp; tuning tips</a></li>
+  </ol>
+</nav>
+
+<!-- ========== INTRO ========== -->
+<section id="intro">
+<h2>1. Introduction &amp; theory refresher</h2>
+
+<p><strong>LCStool</strong> is a MATLAB toolbox developed by G. Haller's group at ETH Zürich
+(<em>Onu, Huhn &amp; Haller, J. Comput. Sci. 7 (2015) 26–36</em>) for extracting
+<strong>Lagrangian Coherent Structures</strong> (LCS) — the most influential material surfaces
+that organise mixing and transport in a time-dependent 2D flow.
+The toolbox works entirely on <em>trajectories</em>; it needs only a right-hand side
+<span class="math">ẋ = v(x,t)</span> and a domain/timespan.</p>
+
+<p>Three families of LCSs are computed:</p>
+<table>
+  <tr><th>Family</th><th>Physical meaning</th><th>Mathematical object</th></tr>
+  <tr>
+    <td><strong>Repelling (hyperbolic)</strong></td>
+    <td>Most repelling material lines — the "spines" of stretching.</td>
+    <td>Shrink lines: integral curves of the <em>minor</em> Cauchy-Green eigenvector <span class="math">ξ<sub>1</sub></span>, seeded at local maxima of <span class="math">λ<sub>2</sub></span>.</td>
+  </tr>
+  <tr>
+    <td><strong>Attracting (hyperbolic)</strong></td>
+    <td>Most attracting material lines.</td>
+    <td>Stretch lines: integral curves of the <em>major</em> eigenvector <span class="math">ξ<sub>2</sub></span>, seeded at local minima of <span class="math">λ<sub>1</sub></span>.</td>
+  </tr>
+  <tr>
+    <td><strong>Elliptic</strong></td>
+    <td>Coherent vortex boundaries.</td>
+    <td>Outermost closed orbits of the generalised <span class="math">η<sub>λ</sub><sup>±</sup></span> field (null-geodesics of the Lorentzian metric <span class="math">E<sub>λ</sub> = ½(C − λ²I)</span>), detected via Poincaré sections.</td>
+  </tr>
+</table>
+
+<p>All three families are derived from the <strong>Cauchy-Green strain tensor</strong>
+<span class="math">C(x<sub>0</sub>) = ∇F<sup>T</sup>∇F</span> of the flow map
+<span class="math">F<sub>t<sub>0</sub></sub><sup>t</sup></span>. Its eigen-decomposition
+<span class="math">(λ<sub>1</sub>, λ<sub>2</sub>, ξ<sub>1</sub>, ξ<sub>2</sub>)</span>
+with <span class="math">0 &lt; λ<sub>1</sub> ≤ λ<sub>2</sub></span>
+is the common input to everything downstream.</p>
+</section>
+
+<!-- ========== PIPELINE ========== -->
+<section id="pipeline">
+<h2>2. The end-to-end pipeline</h2>
+
+<p>Every demo script follows the same five stages. Reading one driver makes the whole
+toolbox transparent:</p>
+
+<div class="pipeline-diagram">
+┌─────────────────────┐
+│ 1. Define flow      │   velocity field  v(t,x)
+│    + domain, time,  │   domain = [xMin xMax; yMin yMax]
+│    + resolution     │   timespan = [t0 tF]
+└──────────┬──────────┘
+           │
+┌──────────▼──────────┐
+│ 2. Advect particles │   integrate_flow  /  eig_cgStrain
+│    compute C, λ, ξ  │   → cgEigenvalue (N×2), cgEigenvector (N×4)
+└──────────┬──────────┘
+           │
+    ┌──────┴──────────────────────────┐
+    │                                 │
+┌───▼────────────────┐        ┌───────▼────────────────┐
+│ 3a. Elliptic       │        │ 3b. Hyperbolic          │
+│  lambda_line       │        │  seed_curves_from_      │
+│  → η_±(λ)          │        │       lambda_max         │
+│  poincare_closed_  │        │  → shrink / stretch      │
+│      orbit_range   │        │      lines               │
+│  elliptic_lcs      │        │  remove_strain_in_       │
+│  → vortex barriers │        │       elliptic           │
+└─────────┬──────────┘        └────────────┬────────────┘
+          │                                │
+          └──────────────┬─────────────────┘
+                         │
+              ┌──────────▼──────────┐
+              │ 4. Plot / analyse   │
+              │    plot_elliptic_   │
+              │    lcs, plot_ftle,  │
+              │    setup_figure …   │
+              └─────────────────────┘
+</div>
+
+<p>LCStool is <em>procedural and flat</em>: every function is self-contained and configured
+through name-value pairs via <code>inputParser</code>. There is almost no shared state
+(the one exception, <a href="#fn-valueHandle"><code>valueHandle</code></a>, is used
+to pass mutable state into ODE event functions).</p>
+</section>
+
+<!-- ========== FUNCTIONS ========== -->
+<section id="functions">
+<h2>3. Function-by-function reference</h2>
+
+<p>All files live in <code>Codes/LCStool-master/LCStool-1-0/</code>.
+Tags:
+<span class="sub-tag tag-util">util</span> utility &middot;
+<span class="sub-tag tag-hyp">hyperbolic</span> &middot;
+<span class="sub-tag tag-ell">elliptic</span> &middot;
+<span class="sub-tag tag-plot">plotting</span>.</p>
+
+<!-- --- GRID / FLOW --- -->
+<h3 id="fn-grid">3.1 Grid &amp; flow integration</h3>
+
+<div class="fn-card">
+  <h4>initialize_ic_grid.m <span class="sub-tag tag-util">util</span></h4>
+  <div class="role">Build a Cartesian grid of initial conditions.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>position = initialize_ic_grid(resolution, domain)</code></dd>
+    <dt>Returns</dt>
+    <dd><code>position</code> — <code>prod(resolution) × 2</code> array of <code>(x,y)</code> pairs (meshgrid flattened).</dd>
+    <dt>Used by</dt>
+    <dd>Every downstream routine that needs uniform seeds.</dd>
+  </dl>
+</div>
+
+<div class="fn-card">
+  <h4>equal_resolution.m <span class="sub-tag tag-util">util</span></h4>
+  <div class="role">Pick <code>resolutionY</code> so that <code>ΔX ≈ ΔY</code>.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>[resolutionY, deltaX] = equal_resolution(domain, resolutionX)</code></dd>
+    <dt>Why needed</dt>
+    <dd>The Cauchy-Green calculation (and its auxiliary-grid spacing) assumes square cells. A warning fires if spacing is unequal.</dd>
+  </dl>
+</div>
+
+<div class="fn-card">
+  <h4>integrate_flow.m <span class="sub-tag tag-util">util</span></h4>
+  <div class="role">Advect a cloud of particles with <code>ode45</code>.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>flowSolution = integrate_flow(flow, initialPosition, useEoV, verbose)</code></dd>
+    <dt>Inputs</dt>
+    <dd><code>flow</code> — struct with <code>derivative</code>, <code>timespan</code>, optional <code>odeSolverOptions</code>, <code>coupledIntegration</code>, <code>cgStrainMethod</code>.<br>
+        <code>useEoV</code> — integrate the 2×2 equation of variation alongside positions (adds 4 extra states per particle).</dd>
+    <dt>Modes</dt>
+    <dd><strong>Coupled</strong>: one huge <code>ode45</code> call on all particles at once — usually fastest. <strong>Uncoupled</strong>: one <code>ode45</code> per particle with <code>parfor</code>.</dd>
+  </dl>
+</div>
+
+<div class="fn-card">
+  <h4>animate_flow.m <span class="sub-tag tag-plot">plotting</span></h4>
+  <div class="role">Quick sanity-check animation of the particle cloud.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>flow = animate_flow(flow, animationTime, framerate, animationFilename)</code></dd>
+    <dt>Notes</dt>
+    <dd>Writes an MP4 (via <code>VideoWriter</code>) if <code>animationFilename</code> is given. Integrates the flow first if <code>flow.solution</code> is missing.</dd>
+  </dl>
+</div>
+
+<div class="fn-card">
+  <h4>apply_periodic_bc.m <span class="sub-tag tag-util">util</span></h4>
+  <div class="role">Wrap positions across periodic axes (currently only the x-direction is implemented).</div>
+</div>
+
+<!-- --- CG / FTLE --- -->
+<h3 id="fn-cg">3.2 Cauchy-Green strain &amp; FTLE</h3>
+
+<div class="fn-card">
+  <h4>eig_cgStrain.m <span class="sub-tag tag-util">util</span></h4>
+  <div class="role">The workhorse. Computes eigenvalues/eigenvectors of C on the whole grid.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>[cgV, cgD] = eig_cgStrain(derivative, domain, resolution, timespan, ...)</code></dd>
+    <dt>Key options</dt>
+    <dd>
+      <code>'method'</code> : <code>'finiteDifference'</code> (default) or <code>'equationOfVariation'</code>.<br>
+      <code>'auxGridRelDelta'</code> (default 1e-2) — spacing of auxiliary grid used to compute ∇F.<br>
+      <code>'eigenvalueFromMainGrid'</code> (default true) — compute eigenvalues on main grid, eigenvectors on auxiliary.<br>
+      <code>'incompressible'</code> — enforce <code>λ<sub>1</sub>·λ<sub>2</sub>=1</code> by setting <code>λ<sub>1</sub> = 1/λ<sub>2</sub></code>.<br>
+      <code>'odeSolverOptions'</code> — <code>odeset</code> struct.
+    </dd>
+    <dt>Outputs</dt>
+    <dd><code>cgD</code> : <code>N×2</code> eigenvalues <code>[λ<sub>1</sub>, λ<sub>2</sub>]</code>.<br>
+        <code>cgV</code> : <code>N×4</code> eigenvectors packed as <code>[ξ<sub>1x</sub>, ξ<sub>1y</sub>, ξ<sub>2x</sub>, ξ<sub>2y</sub>]</code>.</dd>
+    <dt>Internals</dt>
+    <dd>Calls <code>ode45_vector</code> (private), <code>auxiliary_position</code>, <code>compute_cgStrain</code>, and <code>eig_array</code>; points where C is not positive-definite are set to NaN by <code>negative_to_nan</code>.</dd>
+  </dl>
+</div>
+
+<div class="fn-card">
+  <h4>ftle.m <span class="sub-tag tag-util">util</span></h4>
+  <div class="role">Finite-Time Lyapunov Exponent from largest Cauchy-Green eigenvalue.</div>
+  <dl>
+    <dt>Formula</dt>
+    <dd><code>ftle = 0.5·log(λ<sub>2</sub>) / T</code></dd>
+  </dl>
+</div>
+
+<div class="fn-card">
+  <h4>cgStrain_stats.m / eig_error.m <span class="sub-tag tag-util">util</span></h4>
+  <div class="role">Diagnostics: report NaN counts, residual of the eigenvalue problem, deviation of <code>det(C)</code> from 1 (a check on incompressibility).</div>
+</div>
+
+<!-- --- HYPERBOLIC --- -->
+<h3 id="fn-hyp">3.3 Hyperbolic LCS — shrink &amp; stretch lines</h3>
+
+<div class="fn-card">
+  <h4>seed_curves_from_lambda_max.m <span class="sub-tag tag-hyp">hyperbolic</span></h4>
+  <div class="role">Place curves at local extrema of an eigenvalue field and integrate the corresponding eigenvector line.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>[curves, seeds] = seed_curves_from_lambda_max(distance, maxLen, cgEig, cgVec, domain, resolution, ...)</code></dd>
+    <dt>Arguments</dt>
+    <dd>
+      <code>distance</code> — minimum separation between two seeds, prevents curve overlap.<br>
+      <code>maxLen</code>  — max arc length integrated (forward + backward).<br>
+      <code>cgEig</code>  — pass <code>cgD(:,2)</code> for <em>shrink</em>, <code>-cgD(:,1)</code> for <em>stretch</em>.<br>
+      <code>cgVec</code>  — corresponding eigenvector columns <code>cgV(:,1:2)</code> or <code>cgV(:,3:4)</code>.<br>
+      Optional <code>'periodicBc'</code>, <code>'nMaxCurves'</code>, <code>'odeSolverOptions'</code>.
+    </dd>
+    <dt>Algorithm</dt>
+    <dd>(1) find local maxima on a grid with circular-mask distance threshold; (2) sort by value; (3) from each seed integrate the eigenvector field forward and backward with <code>integrate_line</code>; (4) flag grid cells touched, skip overlapping seeds.</dd>
+  </dl>
+</div>
+
+<div class="fn-card">
+  <h4>integrate_line.m <span class="sub-tag tag-util">util</span></h4>
+  <div class="role">Generic integrator for <em>non-orientable</em> vector fields (used by every strain-line and λ-line integration).</div>
+  <dl>
+    <dt>Key tricks</dt>
+    <dd>
+      • Builds a <code>griddedInterpolant</code> for the vector field.<br>
+      • Uses a <code>valueHandle</code> to remember the <em>previous</em> direction; flips sign when the dot-product goes negative, so the integration follows the line-field continuously.<br>
+      • Detects orientation discontinuities across cells (angle between neighbours close to π/2) and replaces the local interpolant with a "continuous" one.<br>
+      • Supports event detection: stop at domain boundary, at NaN, or at a Poincaré section crossing.
+    </dd>
+  </dl>
+</div>
+
+<div class="fn-card">
+  <h4>remove_strain_in_elliptic.m <span class="sub-tag tag-hyp">hyperbolic</span></h4>
+  <div class="role">Trim shrink/stretch lines that cross an elliptic LCS boundary (the vortex interior is excluded from hyperbolic analysis).</div>
+  <dl>
+    <dt>Caveat (flagged in source)</dt>
+    <dd>Assumes each strainline crosses an elliptic region at most once; violating this discards legitimate outside segments.</dd>
+  </dl>
+</div>
+
+<div class="fn-card">
+  <h4>angle_change.m <span class="sub-tag tag-util">util</span> / plot_orient_discont.m <span class="sub-tag tag-plot">plotting</span></h4>
+  <div class="role">Quantify and visualise orientation discontinuities of the eigenvector field.</div>
+</div>
+
+<!-- --- ELLIPTIC --- -->
+<h3 id="fn-ell">3.4 Elliptic LCS — λ-lines &amp; Poincaré closed orbits</h3>
+
+<div class="fn-card">
+  <h4>lambda_line.m <span class="sub-tag tag-ell">elliptic</span></h4>
+  <div class="role">Build the <span class="math">η<sup>+</sup><sub>λ</sub></span> and <span class="math">η<sup>−</sup><sub>λ</sub></span> vector fields (null-geodesics of the Lorentzian metric), eq. 3.2 of DOI:10.1017/jfm.2013.391.</div>
+  <dl>
+    <dt>Formula</dt>
+    <dd>η<sup>±</sup> = √((λ<sub>2</sub> − λ²)/(λ<sub>2</sub> − λ<sub>1</sub>))·ξ<sub>1</sub>  ± √((λ² − λ<sub>1</sub>)/(λ<sub>2</sub> − λ<sub>1</sub>))·ξ<sub>2</sub></dd>
+    <dt>Option</dt>
+    <dd><code>'forceComplexNaN'</code> replaces locations where the expression is complex (when λ lies outside [λ<sub>1</sub>, λ<sub>2</sub>]) with NaN.</dd>
+  </dl>
+</div>
+
+<div class="fn-card">
+  <h4>poincare_closed_orbit.m <span class="sub-tag tag-ell">elliptic</span></h4>
+  <div class="role">For a single Poincaré section and one η-field, find closed orbits and select the outermost.</div>
+  <dl>
+    <dt>Algorithm</dt>
+    <dd>(1) seed <code>numPoints</code> particles along the section; (2) integrate each with <code>integrate_line</code> until it returns to the section; (3) compute signed return distance; (4) find zero-crossings of "return − initial"; (5) refine each with <strong>bisection</strong> (<code>nBisection</code> iterations); (6) keep zero-crossings whose neighbours also return (small <code>dThresh</code>); (7) sort by distance from section start (innermost → outermost).</dd>
+  </dl>
+</div>
+
+<div class="fn-card">
+  <h4>poincare_closed_orbit_multi.m <span class="sub-tag tag-ell">elliptic</span></h4>
+  <div class="role">Loop <code>poincare_closed_orbit</code> over a list of Poincaré sections and over both η<sup>+</sup> and η<sup>−</sup>.</div>
+</div>
+
+<div class="fn-card">
+  <h4>poincare_closed_orbit_range.m <span class="sub-tag tag-ell">elliptic</span></h4>
+  <div class="role">The outer loop: sweep a range of <span class="math">λ</span> values; call <code>lambda_line</code> and <code>poincare_closed_orbit_multi</code> for each.</div>
+  <dl>
+    <dt>Outputs</dt>
+    <dd><code>closedLambdaLinePos</code>, <code>closedLambdaLineNeg</code> — cell arrays of size <code>[nLambda, nPoincareSection]</code>.</dd>
+  </dl>
+</div>
+
+<div class="fn-card">
+  <h4>elliptic_lcs.m <span class="sub-tag tag-ell">elliptic</span></h4>
+  <div class="role">Final selection: for each Poincaré section keep the <em>outermost</em> closed λ-line with the largest enclosed area (via <code>polyarea</code>). Sections with no closed orbit are dropped.</div>
+</div>
+
+<!-- --- UTILITIES / PLOTTING --- -->
+<h3 id="fn-util">3.5 Utilities, plotting, diagnostics</h3>
+
+<div class="fn-card" id="fn-valueHandle">
+  <h4>valueHandle.m <span class="sub-tag tag-util">util</span></h4>
+  <div class="role">One-property handle class. The only OO construct in the toolbox — a trick to pass mutable state (e.g. last vector direction) into ODE output/event functions.</div>
+</div>
+
+<div class="fn-card">
+  <h4>setup_figure.m <span class="sub-tag tag-plot">plotting</span></h4>
+  <div class="role">Create a figure with equal axes and domain limits — used at the top of every demo.</div>
+</div>
+
+<div class="fn-card">
+  <h4>plot_ftle.m <span class="sub-tag tag-plot">plotting</span></h4>
+  <div class="role"><code>pcolor</code> of an FTLE field reshaped to the grid.</div>
+</div>
+
+<div class="fn-card">
+  <h4>plot_elliptic_lcs.m / plot_closed_orbit.m / plot_along_arc_length.m <span class="sub-tag tag-plot">plotting</span></h4>
+  <div class="role">Convenience wrappers for drawing elliptic boundaries, candidate closed orbits, and scalar fields parameterised along a curve.</div>
+</div>
+
+<div class="fn-card">
+  <h4>print_theta_hist.m <span class="sub-tag tag-plot">plotting</span></h4>
+  <div class="role">Histogram of angle changes between eigenvectors of neighbouring grid cells — a quick QA check on the smoothness of the eigenvector field.</div>
+</div>
+</section>
+
+<!-- ========== DEMOS ========== -->
+<section id="demos">
+<h2>4. The three demo cases</h2>
+
+<p>Each demo folder ships three files of interest: <code>derivative.m</code> (the velocity RHS),
+<code>elliptic_hyperbolic_lcs.m</code> (the driver script), and <code>flow_animation.m</code>
+(a visual sanity check). The structure of all three drivers is identical — only the
+velocity definition and parameter values change.</p>
+
+<!-- DOUBLE GYRE -->
+<h3 id="demo-dg">4.1 Double Gyre <span class="sub-tag tag-util">textbook</span></h3>
+
+<p><strong>What it is.</strong> The classic time-periodic Shadden double-gyre
+(DOI:10.1016/j.physd.2005.10.007): two counter-rotating cells on
+<code>[0,2]×[0,1]</code> with a time-dependent dividing line.</p>
+
+<p><strong>Velocity</strong> (see <code>demo/double_gyre/derivative.m</code>):</p>
+<pre><code><span class="com">% parameters: epsilon=0.1, amplitude=0.1, omega=pi/5</span>
+<span class="kw">a</span> = epsilon*sin(omega*t);
+<span class="kw">b</span> = 1 - 2*epsilon*sin(omega*t);
+<span class="kw">f</span> = a*x.^2 + b*x;
+u = -pi*A*sin(pi*f)*cos(pi*y);
+v =  pi*A*cos(pi*f)*sin(pi*y)*(2*a*x + b);</code></pre>
+
+<p><strong>Key parameters in the driver:</strong></p>
+<table>
+  <tr><th>Parameter</th><th>Value</th><th>Meaning</th></tr>
+  <tr><td>timespan</td><td>[0, 10]</td><td>advection window</td></tr>
+  <tr><td>domain</td><td>[0,2; 0,1]</td><td>physical domain</td></tr>
+  <tr><td>resolutionX</td><td>500</td><td>main grid x-resolution</td></tr>
+  <tr><td>lambda</td><td>0.93 : 0.01 : 1.07</td><td>λ-sweep for elliptic LCS</td></tr>
+  <tr><td>poincareSection(1).endPosition</td><td>[.55,.55 ; .1,.1]</td><td>left vortex</td></tr>
+  <tr><td>poincareSection(2).endPosition</td><td>[1.53,.45 ; 1.95,.05]</td><td>right vortex</td></tr>
+  <tr><td>shrinkLineMaxLength</td><td>20</td><td>arc-length cap for repelling LCSs</td></tr>
+</table>
+
+<p><strong>Expected output.</strong> One green elliptic LCS per vortex, plus dense
+red/blue "spines" of repelling and attracting manifolds that sweep around the gyres.</p>
+
+<!-- BICKLEY JET -->
+<h3 id="demo-bj">4.2 Bickley Jet <span class="sub-tag tag-util">geophysical</span></h3>
+
+<p><strong>What it is.</strong> An idealised zonal jet with three travelling Rossby-wave
+perturbations on a periodic zonal channel — a standard benchmark for geophysical LCS
+(Beron-Vera <em>et al.</em>, DOI:10.1016/j.physd.2012.06.012).</p>
+
+<p><strong>Velocity structure.</strong> The stream function is</p>
+<p style="text-align:center"><code>ψ = U·L·(tanh(y/L) − sech²(y/L)·Re[Σ<sub>n</sub> ε<sub>n</sub>·f<sub>n</sub>(t)·exp(i k<sub>n</sub> x)]) − c<sub>3</sub>·y</code></p>
+
+<p>which gives the <code>u,v</code> returned by <code>demo/bickley_jet/derivative.m</code>.
+Three perturbation cases are available:</p>
+<ul>
+  <li><code>case 1</code> — time-periodic ψ<sub>1</sub>.</li>
+  <li><code>case 2,3</code> — time-aperiodic forcing driven by an auxiliary ODE (<code>d_phi.m</code>) integrated beforehand.</li>
+</ul>
+
+<p><strong>Characteristic setup:</strong></p>
+<ul>
+  <li><code>domain = [0, π·R<sub>Earth</sub>; −2.25·L<sub>Y</sub>, 2.25·L<sub>Y</sub>]</code></li>
+  <li><code>periodicBc = [true, false]</code> — x-periodicity is essential.</li>
+  <li><strong>Five Poincaré sections</strong> — one for each of the expected coherent vortices along the jet (the "Rossby-wave rings").</li>
+  <li><code>shrinkLineMaxLength = 1e8</code> m — much longer than the channel because strainlines can wrap many times.</li>
+</ul>
+
+<p><strong>Why it matters.</strong> It's the cleanest published example of elliptic LCS
+acting as material vortex boundaries in a perturbed shear flow.</p>
+
+<!-- OCEAN DATASET -->
+<h3 id="demo-od">4.3 Ocean Dataset <span class="sub-tag tag-util">real data</span></h3>
+
+<p><strong>What it is.</strong> A 30-day slice of <strong>AVISO</strong> geostrophic surface
+velocities in the Agulhas region (south-west Indian Ocean). Data is shipped as
+<code>ocean_geostrophic_velocity.mat</code> with the variables <code>time, lat, lon, vLon, vLat</code>.</p>
+
+<p><strong>Velocity</strong> is supplied by bilinear/spline interpolation
+(<code>demo/ocean_dataset/derivative.m</code>):</p>
+<pre><code>vLonInterpolant = griddedInterpolant({time, lat, lon}, vLon, <span class="str">'spline'</span>);
+vLatInterpolant = griddedInterpolant({time, lat, lon}, vLat, <span class="str">'spline'</span>);
+lDerivative = @(t,x,~) derivative(t, x, vLonInterpolant, vLatInterpolant);</code></pre>
+
+<p><strong>Setup:</strong></p>
+<ul>
+  <li>timespan = [100, 130] (days since arbitrary origin).</li>
+  <li>domain = [0°, 6° lon; −34°, −28° lat].</li>
+  <li>5 Poincaré sections placed by hand over suspected mesoscale eddies.</li>
+  <li><code>cgEigenvalueFromMainGrid = false</code> — eigenvalues from the auxiliary grid are more accurate for noisy data.</li>
+  <li>λ-sweep 0.9 : 0.02 : 1.1, slightly coarser than the analytical demos.</li>
+</ul>
+
+<p><strong>Takeaway for users of real data.</strong> The only differences from the
+analytical demos are:
+(a) <code>derivative</code> uses <code>griddedInterpolant</code>,
+(b) you must zero-pad the velocity at the boundaries to avoid NaNs leaking into trajectories,
+(c) degrees/days are used consistently everywhere (so speeds are in deg/day).</p>
+</section>
+
+<!-- ========== HOWTO ========== -->
+<section id="howto">
+<h2>5. How to use LCStool on your own velocity field</h2>
+
+<p>Two scenarios cover almost every case.</p>
+
+<h3>5.1 Analytical velocity (you have equations)</h3>
+
+<p>Write a <code>derivative.m</code> that matches LCStool's convention and copy a demo
+driver. The convention is strict:</p>
+
+<ul>
+  <li><code>position</code> comes in as a column vector stacked as <code>[x1;y1;x2;y2;…;xN;yN]</code>;</li>
+  <li>Your function must return a column of the same length with <code>[u1;v1;u2;v2;…;uN;vN]</code>;</li>
+  <li>A third argument <code>useEoV</code> is required; if you don't support the equation of variation, ignore it (set <code>useEoV=false</code> always when wrapping).</li>
+</ul>
+
+<p><strong>Minimal template:</strong></p>
+<pre><code><span class="kw">function</span> dydt = my_derivative(t, x, useEoV)
+    idxX = 1:2:numel(x)-1;
+    idxY = 2:2:numel(x);
+    dydt = nan(size(x));
+    <span class="com">% --- your velocity ---</span>
+    dydt(idxX) =  sin(x(idxY));
+    dydt(idxY) = -cos(x(idxX));
+<span class="kw">end</span></code></pre>
+
+<p>Then the driver:</p>
+
+<pre><code>addpath(<span class="str">'path/to/LCStool-1-0'</span>);
+
+<span class="com">%% 1. Domain, grid, time</span>
+domain      = [0, 2*pi; 0, 2*pi];
+timespan    = [0, 20];
+resolutionX = 400;
+[resolutionY, deltaX] = equal_resolution(domain, resolutionX);
+resolution  = [resolutionX, resolutionY];
+
+<span class="com">%% 2. Velocity wrapper</span>
+lDerivative   = @(t,x,~) my_derivative(t, x, false);
+incompressible = true;
+
+<span class="com">%% 3. Cauchy-Green</span>
+cgOde = odeset(<span class="str">'relTol'</span>, 1e-5);
+[cgV, cgD] = eig_cgStrain(lDerivative, domain, resolution, timespan, ...
+                <span class="str">'incompressible'</span>, incompressible, ...
+                <span class="str">'odeSolverOptions'</span>, cgOde);
+
+<span class="com">%% 4. Hyperbolic LCS: shrink (repelling) &amp; stretch (attracting) lines</span>
+shrinkOde = odeset(<span class="str">'relTol'</span>, 1e-6);
+shrinkLine = seed_curves_from_lambda_max(2*deltaX, 20, cgD(:,2), cgV(:,1:2), ...
+                                        domain, resolution, ...
+                                        <span class="str">'odeSolverOptions'</span>, shrinkOde);
+stretchLine = seed_curves_from_lambda_max(10*deltaX, 20, -cgD(:,1), cgV(:,3:4), ...
+                                        domain, resolution, ...
+                                        <span class="str">'odeSolverOptions'</span>, shrinkOde);
+
+<span class="com">%% 5. Elliptic LCS: choose Poincaré sections through candidate vortex cores</span>
+poincareSection = struct(<span class="str">'endPosition'</span>,{},<span class="str">'numPoints'</span>,{},<span class="str">'orbitMaxLength'</span>,{});
+poincareSection(1).endPosition = [pi, pi; pi+1, pi+1];  <span class="com">% tailor to your flow</span>
+[poincareSection.numPoints] = deal(100);
+<span class="kw">for</span> i = 1:numel(poincareSection)
+    r = hypot(diff(poincareSection(i).endPosition(:,1)), ...
+              diff(poincareSection(i).endPosition(:,2)));
+    poincareSection(i).orbitMaxLength = 2*(2*pi*r);
+<span class="kw">end</span>
+lambda = 0.9 : 0.02 : 1.1;
+
+[clPos, clNeg] = poincare_closed_orbit_range(domain, resolution, cgV, cgD, ...
+                    lambda, poincareSection, <span class="str">'forceEtaComplexNaN'</span>, true);
+ellipticLcs = [elliptic_lcs(clPos), elliptic_lcs(clNeg)];
+
+<span class="com">%% 6. Plot</span>
+hAx = setup_figure(domain);
+plot_elliptic_lcs(hAx, ellipticLcs);
+cellfun(@(p) plot(hAx, p(:,1), p(:,2), <span class="str">'r'</span>), shrinkLine);
+cellfun(@(p) plot(hAx, p(:,1), p(:,2), <span class="str">'b'</span>), stretchLine);</code></pre>
+
+<div class="tip"><strong>Tip.</strong> If you want just an FTLE map (no LCSs),
+you only need <code>eig_cgStrain</code> → <code>ftle</code> → <code>plot_ftle</code>. That's three lines.</div>
+
+<h3>5.2 Gridded velocity data (CFD output, satellite, model)</h3>
+
+<p>Adapt the ocean demo. The only thing to change is how <code>derivative</code> is built:</p>
+
+<pre><code><span class="com">% Suppose you have: t (nT×1), x (nX×1), y (nY×1),</span>
+<span class="com">%                   U, V both size [nT × nY × nX] (note Y before X for griddedInterpolant)</span>
+
+U_int = griddedInterpolant({t, y, x}, U, <span class="str">'spline'</span>);
+V_int = griddedInterpolant({t, y, x}, V, <span class="str">'spline'</span>);
+
+<span class="kw">function</span> dydt = my_deriv_data(t, pos, Uin, Vin)
+    N = numel(pos)/2;
+    dydt = nan(2*N, 1);
+    xPart = pos(1:2:end-1);
+    yPart = pos(2:2:end);
+    tCol  = t*ones(N,1);
+    dydt(1:2:end-1) = Uin(tCol, yPart, xPart);
+    dydt(2:2:end)   = Vin(tCol, yPart, xPart);
+<span class="kw">end</span>
+
+lDerivative = @(t,x,~) my_deriv_data(t, x, U_int, V_int);</code></pre>
+
+<p>Then copy the rest of the ocean driver. Remember:</p>
+<ul>
+  <li>Zero the velocity in the first and last index of each dimension, otherwise trajectories hitting the edge return NaN and pollute neighbours.</li>
+  <li>Use a spatial resolution the velocity data can support — oversampling just
+      amplifies interpolation noise into the Cauchy-Green field.</li>
+  <li>For curvilinear or lat/lon data, either convert to a local flat projection
+      <em>or</em> include the metric factors in your <code>derivative</code>.</li>
+</ul>
+
+<h3>5.3 A practical order of operations</h3>
+
+<ol>
+  <li><strong>First</strong> run only <code>integrate_flow</code> + <code>animate_flow</code> — verify the particles move sensibly.</li>
+  <li><strong>Second</strong> compute <code>eig_cgStrain</code> and plot FTLE = <code>0.5·log(λ<sub>2</sub>)/T</code> with <code>plot_ftle</code>. Ridges in FTLE pre-visualise the hyperbolic LCS locations; if they look sensible, your pipeline is wired correctly.</li>
+  <li><strong>Third</strong> run <code>seed_curves_from_lambda_max</code>.</li>
+  <li><strong>Last</strong> pick Poincaré sections by eye (through clear FTLE eddy cores) and run <code>poincare_closed_orbit_range</code>. This step is the fussiest — expect to iterate on section placement and the <code>dThresh</code>/<code>nBisection</code> parameters.</li>
+</ol>
+</section>
+
+<!-- ========== PITFALLS ========== -->
+<section id="pitfalls">
+<h2>6. Common pitfalls &amp; tuning tips</h2>
+
+<div class="warn">
+  <strong>MATLAB version.</strong> <code>seed_curves_from_lambda_max</code> hard-errors on
+  releases older than R2013a ("silent failures" were observed on R2011b).
+</div>
+
+<div class="warn">
+  <strong>Axis order.</strong> LCStool stores positions as <code>[x y]</code> rows, but reshapes use
+  <code>fliplr(resolution)</code> because MATLAB arrays are row-major with y along the first
+  dimension. Whenever you write a new plotting helper, double-check that the reshape
+  matches what <code>griddedInterpolant({y, x}, …)</code> expects.
+</div>
+
+<div class="warn">
+  <strong>NaNs in the eigen-fields.</strong> The toolbox produces NaN on three occasions: (1) when
+  C loses positive-definiteness (numerical error), (2) when a particle leaves the domain, (3) when
+  <code>'incompressible'</code> pushes <code>λ<sub>1</sub> ≥ 1</code>. Downstream routines tolerate
+  NaNs, but a large NaN fraction indicates integration tolerances are too loose.
+</div>
+
+<div class="tip">
+  <strong>λ-sweep granularity.</strong> For analytical flows <code>0.01</code> step is usually fine;
+  for noisy ocean data <code>0.02–0.05</code> is enough and much faster.
+</div>
+
+<div class="tip">
+  <strong>Poincaré section placement.</strong> A section should cross the suspected vortex
+  <em>once</em> and be longer than the largest expected orbit diameter. Place <code>endPosition(1,:)</code>
+  near the eddy centre and <code>endPosition(2,:)</code> outside its edge.
+</div>
+
+<div class="tip">
+  <strong>Parallelism.</strong> <code>integrate_flow</code> and <code>poincare_closed_orbit</code>
+  use <code>parfor</code>. Start a parallel pool (<code>parpool</code>) before calling them for large grids.
+</div>
+
+<div class="warn">
+  <strong>"Large angle discontinuity" warning.</strong> This flags cells where neighbouring
+  eigenvector orientations differ by nearly π/2. Small counts are harmless; clustered
+  discontinuities suggest the auxiliary-grid spacing (<code>auxGridRelDelta</code>) is too
+  small or the underlying velocity field is under-resolved.
+</div>
+</section>
+
+<footer>
+Generated for the Serra lab reference notes — LCStool v1.0 (Onu, Huhn &amp; Haller, 2015).
+Source: <code>Codes/LCStool-master/LCStool-1-0/</code>.
+</footer>
+
+</div>
+</body>
+</html>
