@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LCStool Documentation — Pitfalls &amp; Tuning</title>
+<link rel="stylesheet" href="assets/style.css">
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['$','$'], ['\\(','\\)']] },
+    svg: { fontCache: 'global' }
+  };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<div class="layout">
+
+<aside class="sidebar">
+  <h1><a href="index.html">LCStool Docs</a></h1>
+  <span class="tag">Serra Lab · Ref v1.0</span>
+  <nav>
+    <ul>
+      <li><a href="index.html">Home</a></li>
+
+      <li class="has-sub">
+        <a href="math.html">Math Foundations</a>
+        <ul class="submenu">
+          <li><a href="math.html#flow-map">Flow map &amp; deformation gradient</a></li>
+          <li><a href="math.html#cg-tensor">Cauchy-Green tensor</a></li>
+          <li><a href="math.html#ftle">FTLE</a></li>
+          <li><a href="math.html#hyperbolic">Hyperbolic LCS theory</a></li>
+          <li><a href="math.html#elliptic">Elliptic LCS theory</a></li>
+          <li><a href="math.html#lambda-line">λ-lines &amp; null-geodesics</a></li>
+        </ul>
+      </li>
+
+      <li class="has-sub">
+        <a href="pipeline.html">Pipeline</a>
+        <ul class="submenu">
+          <li><a href="pipeline.html#overview">Overview diagram</a></li>
+          <li><a href="pipeline.html#stage1">Stage 1 — Flow definition</a></li>
+          <li><a href="pipeline.html#stage2">Stage 2 — C &amp; eigen-decomp</a></li>
+          <li><a href="pipeline.html#stage3">Stage 3 — Hyperbolic LCS</a></li>
+          <li><a href="pipeline.html#stage4">Stage 4 — Elliptic LCS</a></li>
+          <li><a href="pipeline.html#stage5">Stage 5 — Plotting</a></li>
+        </ul>
+      </li>
+
+      <li class="has-sub">
+        <a href="functions.html">Functions</a>
+        <ul class="submenu">
+          <li><a href="functions.html#grid">Grid &amp; flow</a></li>
+          <li><a href="functions.html#cg">Cauchy-Green &amp; FTLE</a></li>
+          <li><a href="functions.html#hyperbolic">Hyperbolic LCS</a></li>
+          <li><a href="functions.html#elliptic">Elliptic LCS</a></li>
+          <li><a href="functions.html#diagnostic">Diagnostics</a></li>
+        </ul>
+      </li>
+
+      <li class="has-sub">
+        <a href="plotting.html">Plotting</a>
+        <ul class="submenu">
+          <li><a href="plotting.html#setup">setup_figure</a></li>
+          <li><a href="plotting.html#ftle">plot_ftle</a></li>
+          <li><a href="plotting.html#elliptic">plot_elliptic_lcs</a></li>
+          <li><a href="plotting.html#orbit">plot_closed_orbit</a></li>
+          <li><a href="plotting.html#arc">plot_along_arc_length</a></li>
+          <li><a href="plotting.html#discont">plot_orient_discont</a></li>
+          <li><a href="plotting.html#animate">animate_flow</a></li>
+        </ul>
+      </li>
+
+      <li class="has-sub">
+        <a href="demos.html">Demos</a>
+        <ul class="submenu">
+          <li><a href="demos.html#double-gyre">Double Gyre</a></li>
+          <li><a href="demos.html#bickley-jet">Bickley Jet</a></li>
+          <li><a href="demos.html#ocean">Ocean Dataset</a></li>
+        </ul>
+      </li>
+
+      <li class="has-sub">
+        <a href="howto.html">How-To Guide</a>
+        <ul class="submenu">
+          <li><a href="howto.html#convention">Input conventions</a></li>
+          <li><a href="howto.html#analytical">Analytical field</a></li>
+          <li><a href="howto.html#gridded">Gridded data</a></li>
+          <li><a href="howto.html#workflow">Recommended workflow</a></li>
+        </ul>
+      </li>
+
+      <li class="active"><a href="pitfalls.html">Pitfalls &amp; Tuning</a></li>
+    </ul>
+  </nav>
+</aside>
+
+<main>
+<header class="page-head">
+  <h1>Pitfalls &amp; Tuning</h1>
+  <p class="sub">Things that silently break LCStool runs — and how to diagnose them.</p>
+</header>
+
+<h2 id="environment">1. Environment &amp; compatibility</h2>
+
+<div class="warn">
+<strong>MATLAB version.</strong> LCStool v1.0 was written against <strong>MATLAB R2013a</strong>.
+Features that regularly break on newer releases:
+<ul>
+  <li><code>griddedInterpolant</code> boundary behaviour changed after R2017b — NaN handling of the
+      <code>'linear'</code> extrapolation mode is now stricter. Use <code>'none'</code> explicitly
+      if you want out-of-domain queries to return <code>NaN</code> (the toolbox assumes so).</li>
+  <li><code>parfor</code> requires <strong>Parallel Computing Toolbox</strong>. Without it,
+      <code>compute_cauchy_green</code> and <code>integrate_line</code> still run, but serially
+      and ~4–8× slower.</li>
+  <li><code>ode45</code> tolerances default to <code>1e-3/1e-6</code>; all demos explicitly set
+      <code>AbsTol = RelTol = 1e-6</code>. Leaving the defaults produces visible "wobble" in
+      shrink-line integration.</li>
+</ul>
+</div>
+
+<h3>Toolbox dependencies</h3>
+<table>
+<tr><th>Toolbox</th><th>Used by</th><th>Optional?</th></tr>
+<tr><td>Parallel Computing</td><td><code>compute_cauchy_green</code>, <code>integrate_line</code></td><td>Yes — slower without it</td></tr>
+<tr><td>Statistics</td><td><code>animate_flow</code> (kernel density)</td><td>Yes — animation only</td></tr>
+<tr><td>Image Processing</td><td>—</td><td>Not required</td></tr>
+</table>
+
+<h2 id="axis-order">2. The axis-order trap</h2>
+
+<p>This is the <strong>single most common bug</strong> in user code.</p>
+
+<div class="warn">
+<p>MATLAB's <code>ndgrid</code> and <code>meshgrid</code> use opposite axis conventions.
+LCStool stores its grids as <code>[x₁ y₁ … xₙ yₙ]</code> pairs in a column vector,
+built from <code>ndgrid</code>. When you later call <code>reshape</code> to turn a scalar
+field into an image, the <em>resolution vector must be flipped</em>:</p>
+<pre><code>ftle_matrix = reshape(ftle_vec, fliplr(resolution));  % correct
+ftle_matrix = reshape(ftle_vec, resolution);          % WRONG — transposes result
+</code></pre>
+<p><strong>Why:</strong> <code>resolution = [nx, ny]</code> but <code>reshape</code> fills
+column-major, so the leading dimension must be the <em>fast</em> one (y). All LCStool
+helpers already do this internally; you only need to remember it when you pull raw
+vectors out of <code>cgStrain</code>.</p>
+</div>
+
+<h3>Sanity check</h3>
+<pre><code>% After compute_cauchy_green returns
+imagesc(cgEigenvalue(:,:,2));   % should look like a proper flow field
+% If it looks "sheared" or axis-rotated, your reshape is wrong.
+</code></pre>
+
+<h2 id="nan-sources">3. NaNs in the eigen-fields</h2>
+
+<p>You open <code>imagesc(cgEigenvalue(:,:,2))</code> and see white patches. Ranked by
+frequency:</p>
+
+<ol>
+  <li><strong>Trajectories leaving the domain.</strong> When a particle integrated by
+      <code>compute_cauchy_green</code> exits the region where <code>flow.derivative</code>
+      is defined, the interpolant returns <code>NaN</code>, and ∇F — and therefore λ₂ —
+      becomes <code>NaN</code>. Fix: enlarge the domain, shorten <code>timespan</code>, or
+      pad the velocity data with zeros before building the interpolant (see
+      <code>ocean_dataset.m</code>).</li>
+  <li><strong>Auxiliary grid too large.</strong> With
+      <code>method = 'finiteDifference'</code>, each grid point spawns a 4-point stencil
+      offset by <code>auxGridRelDelta</code>. If that offset pushes the stencil outside
+      the domain, the corner trajectory fails. Reduce
+      <code>auxGridRelDelta</code> from the default 0.01 to e.g. 0.005.</li>
+  <li><strong>Non-finite velocity.</strong> Velocity fields with NaN values anywhere
+      (common in AVISO ocean data near coastlines) contaminate every trajectory that
+      touches them. Pre-process: replace NaN with 0 (for closed coasts) or mask them out
+      and restrict the analysis domain.</li>
+  <li><strong>Stiff ODE.</strong> Very rarely, <code>ode45</code> gives up on a stiff
+      point and returns <code>NaN</code>. Switch to <code>ode23</code> or
+      <code>ode15s</code> (pass via <code>odeset</code> and a custom
+      <code>odeSolverOptions</code>).</li>
+</ol>
+
+<div class="tip">
+Quick NaN map:
+<pre><code>figure, imagesc(isnan(cgEigenvalue(:,:,2)))
+title('NaN mask — white = bad trajectories')
+</code></pre>
+</div>
+
+<h2 id="poincare">4. Poincaré section placement</h2>
+
+<p>The elliptic-LCS detector scans a <em>Poincaré section</em> — a user-supplied line
+segment — and looks for λ-lines that cross it and return to themselves. Section choice
+is critical:</p>
+
+<table>
+<tr><th>If the section…</th><th>Result</th><th>Remedy</th></tr>
+<tr><td>misses the vortex core</td><td>No closed orbits found</td><td>Place the section to cut <em>through</em> the vortex — e.g. along the symmetry axis.</td></tr>
+<tr><td>passes through a hyperbolic point</td><td>Return map has a singularity; bisection fails near it</td><td>Offset the section by ≈5% of the vortex radius.</td></tr>
+<tr><td>is too short</td><td>Outermost orbit is cut off</td><td>Extend until the return-distance plot shows a clear rise at both ends.</td></tr>
+<tr><td>is too long</td><td>Spurious zeros from adjacent structures</td><td>Shorten or split into multiple sections; use <code>showPlot.orbitsPoincareSection = true</code> to debug.</td></tr>
+</table>
+
+<h3>Inspecting the return-distance map</h3>
+<pre><code>% Inside poincare_closed_orbit.m workflow
+showPlot.poincareSection = true;
+showPlot.returnDistance  = true;       % 1-D plot of d(s) along section
+% A "good" section shows d(s) crossing zero once per closed orbit, with
+% changes of sign well-separated. Multiple rapid oscillations = bad section.
+</code></pre>
+
+<h2 id="lambda-sweep">5. λ-sweep granularity</h2>
+
+<p>Elliptic LCS are stacks of closed λ-lines for <code>lambda ∈ [lambdaMin, lambdaMax]</code>.
+Increasing the number of λ values:</p>
+
+<ul>
+  <li>Finds thinner Lagrangian vortices (the <em>outermost</em> orbit survives over a
+      narrow λ window).</li>
+  <li>Linearly increases cost — each λ is a full Poincaré scan.</li>
+</ul>
+
+<div class="note">
+<strong>Typical values.</strong>
+<ul>
+  <li>Double Gyre: <code>lambda = 0.9 : 0.01 : 1.1</code> (21 values) — plenty.</li>
+  <li>Bickley Jet: <code>0.93 : 0.005 : 1.07</code> — core vortices are slim; finer step.</li>
+  <li>Ocean data: start with <code>0.8 : 0.02 : 1.2</code>, refine around where orbits appear.</li>
+</ul>
+</div>
+
+<div class="warn">
+Do <em>not</em> include <code>λ = 1</code> exactly if you plan to compare to Haller's
+<em>stretching-rotation</em> vortices — at λ=1 the η-field degenerates to a ξ₂ line,
+which is the shear skeleton, not a vortex boundary.
+</div>
+
+<h2 id="orient-discont">6. Orientation discontinuities</h2>
+
+<p>The Cauchy-Green eigenvectors (ξ₁, ξ₂) are <strong>line fields</strong>, not vector
+fields: their sign is arbitrary. LCStool integrates them using a
+<code>valueHandle</code> that flips sign when the local orientation disagrees with the
+previous step by more than a threshold angle
+(<code>orientDiscontAngle</code>, default π/2).</p>
+
+<div class="warn">
+<strong>Warning "large angle discontinuity".</strong> Printed by
+<code>integrate_line</code> when a sign flip of more than
+<code>orientDiscontAngle</code> is required. This usually indicates:
+<ul>
+  <li>The eigenvector field is <em>genuinely</em> singular at that point
+      (λ₁ = λ₂ — an umbilical point). Safe to ignore if isolated.</li>
+  <li>The auxiliary grid is too coarse to resolve a sharp rotation.
+      Decrease <code>auxGridRelDelta</code>.</li>
+  <li>The ODE step is jumping across a discontinuity line. Tighten ODE
+      tolerances (<code>RelTol = 1e-8</code>).</li>
+</ul>
+Use <code>plot_orient_discont</code> to overlay the discontinuity map on your FTLE plot
+and see if the warning tracks a real feature.
+</div>
+
+<h2 id="performance">7. Performance tuning</h2>
+
+<table>
+<tr><th>Lever</th><th>Effect</th><th>Guidance</th></tr>
+<tr><td><code>resolution</code></td><td>Cost scales ∝ n_x · n_y</td><td>Start at 200×100; double only when features are undersampled.</td></tr>
+<tr><td><code>timespan</code></td><td>Longer T → sharper LCS but slower integration</td><td>T ≈ 2–3 Lyapunov times is a good default.</td></tr>
+<tr><td><code>auxGridRelDelta</code></td><td>Smaller → more accurate ∇F but closer to NaN edges</td><td>Default 0.01 is safe; go 0.005 only if eigen-field is noisy.</td></tr>
+<tr><td><code>useEoV</code></td><td>True: integrate variational equation (4× more ODE states)</td><td>Use for analytical flows only — for gridded data, finite differences are usually faster and almost as accurate.</td></tr>
+<tr><td><code>parpool</code></td><td>Parallel <code>parfor</code> speedup</td><td>Open <em>before</em> <code>compute_cauchy_green</code>; ~0.9× linear speedup.</td></tr>
+<tr><td>ODE <code>RelTol</code></td><td>Trajectory accuracy</td><td>1e-6 for FTLE; 1e-8 for stretch/shrink-line integration.</td></tr>
+</table>
+
+<h3>When the run is too slow</h3>
+<ol>
+  <li>Profile: <code>profile on; poincare_closed_orbit(...); profile viewer</code></li>
+  <li>Typical hot spot is the interpolant inside <code>flow.derivative</code> — make sure
+      you pre-build <code>griddedInterpolant</code> once and capture it by closure,
+      <em>not</em> rebuild on every call.</li>
+  <li>For elliptic LCS on a fine grid, most time is spent in
+      <code>integrate_line</code> — this is where <code>parfor</code> pays off.</li>
+</ol>
+
+<h2 id="numerical-checks">8. Quick sanity checks</h2>
+
+<div class="tip">
+Run these after any new flow field is plugged in:
+<pre><code>% 1. Flow map is conservative to ~1e-12 (incompressible test)
+lam1 = cgEigenvalue(:,:,1);
+lam2 = cgEigenvalue(:,:,2);
+disp(max(abs(lam1(:).*lam2(:) - 1)))     % should be &lt;~1e-10
+
+% 2. FTLE is non-negative
+ftle = 1/(2*lcs_T) * log(lam2);
+disp(min(ftle(:)))                       % &ge; 0 up to rounding
+
+% 3. Eigenvectors are unit length
+xi1 = cgEigenvector(:,:,1:2);
+disp(max(abs(sum(xi1.^2,3) - 1)))        % &lt;~1e-12
+</code></pre>
+If any of these fails by more than rounding, suspect NaNs or an axis-order bug.
+</div>
+
+<h2 id="reproducibility">9. Reproducibility notes</h2>
+
+<ul>
+  <li><code>ode45</code> is deterministic for a fixed version of MATLAB, but results can
+      shift in the 5th decimal across MATLAB releases. Always version-pin for papers.</li>
+  <li><code>parfor</code> loop order is non-deterministic but the <em>result</em> is
+      deterministic, because each iteration writes a unique slice. Numerical equality is
+      safe to assert.</li>
+  <li>When comparing against published figures from Onu, Huhn &amp; Haller (2015),
+      the demos ship exact parameter values; changing <code>timespan</code> or
+      <code>resolution</code> will produce subtly different-looking LCS.</li>
+</ul>
+
+<h2 id="deprecations">10. Known issues in v1.0</h2>
+
+<ul>
+  <li><code>animate_flow.m</code> uses <code>getframe</code>, which on headless Linux
+      produces blank frames. Work around with <code>set(gcf,'Visible','off')</code> and
+      <code>print</code> to file per step.</li>
+  <li>If your grid has only one point along an axis (1D test), <code>reshape</code>
+      collapses and later plots fail. The toolbox is strictly 2D.</li>
+  <li>The <code>valueHandle</code> class is a legacy workaround for MATLAB's lack of
+      object references pre-R2008a. It works fine but produces hard-to-read stack
+      traces — when debugging, set a breakpoint <em>inside</em>
+      <code>integrate_line_derivative</code>, not in the ODE callback.</li>
+</ul>
+
+<div class="page-nav">
+  <a href="howto.html">← How-To Guide</a>
+  <a href="index.html">Home →</a>
+</div>
+
+</main>
+</div>
+<script src="assets/nav.js"></script>
+</body>
+</html>

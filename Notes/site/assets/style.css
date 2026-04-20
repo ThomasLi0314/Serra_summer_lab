@@ -1,0 +1,352 @@
+/* LCStool documentation site -- shared stylesheet */
+:root {
+  --fg: #1f1f1f;
+  --bg: #fbfaf7;
+  --muted: #666;
+  --accent: #1b6ca8;
+  --accent-hover: #2487cc;
+  --accent-soft: #e8f1f8;
+  --side-bg: #f4f1ea;
+  --side-active: #1b6ca8;
+  --side-active-bg: #e8f1f8;
+  --code-bg: #2e3440;
+  --code-fg: #eceff4;
+  --border: #d9d4c8;
+  --warn-bg: #fff5d6;
+  --warn-border: #e0b84a;
+  --tip-bg: #e8f5ea;
+  --tip-border: #5ca878;
+  --note-bg: #eef2f9;
+  --note-border: #6681b0;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--fg);
+  background: var(--bg);
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-hover); text-decoration: underline; }
+
+/* ---------- Layout ---------- */
+.layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: 100vh;
+}
+aside.sidebar {
+  background: var(--side-bg);
+  border-right: 1px solid var(--border);
+  padding: 1.25rem 1rem 2rem;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+aside.sidebar h1 {
+  font-size: 1.15rem;
+  margin: 0 0 .25rem;
+  color: var(--accent);
+}
+aside.sidebar h1 a { color: inherit; }
+aside.sidebar .tag {
+  font-size: .75rem;
+  color: var(--muted);
+  margin-bottom: 1rem;
+  display: block;
+}
+aside.sidebar nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+aside.sidebar nav > ul > li {
+  margin: .25rem 0;
+}
+aside.sidebar nav > ul > li > a {
+  display: block;
+  padding: .4rem .6rem;
+  border-radius: 4px;
+  color: #333;
+  font-weight: 600;
+  font-size: .95rem;
+  transition: background .15s ease;
+}
+aside.sidebar nav > ul > li > a:hover {
+  background: rgba(27, 108, 168, 0.08);
+  text-decoration: none;
+}
+aside.sidebar nav > ul > li > a.active,
+aside.sidebar nav > ul > li.active > a {
+  background: var(--side-active-bg);
+  color: var(--side-active);
+  border-left: 3px solid var(--side-active);
+  padding-left: calc(.6rem - 3px);
+}
+aside.sidebar nav ul ul {
+  padding-left: .85rem;
+  margin: .1rem 0 .4rem;
+  border-left: 1px dashed #c4bdb0;
+}
+aside.sidebar nav ul ul li a {
+  display: block;
+  padding: .2rem .5rem;
+  font-size: .87rem;
+  color: #555;
+  border-radius: 3px;
+}
+aside.sidebar nav ul ul li a:hover {
+  background: rgba(27, 108, 168, 0.06);
+  text-decoration: none;
+  color: var(--accent);
+}
+aside.sidebar nav ul ul li a.active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+main {
+  padding: 2rem 2.5rem 5rem;
+  max-width: 920px;
+  width: 100%;
+}
+main header.page-head {
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: .75rem;
+  margin-bottom: 2rem;
+}
+main header.page-head h1 {
+  color: var(--accent);
+  margin: 0 0 .2rem;
+  font-size: 1.9rem;
+}
+main header.page-head p.sub {
+  color: var(--muted);
+  margin: 0;
+  font-style: italic;
+}
+h2 {
+  color: var(--accent);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: .25rem;
+  margin-top: 2.5rem;
+}
+h3 { margin-top: 1.8rem; color: #333; }
+h4 { margin-bottom: .3rem; color: #444; }
+
+/* ---------- Code ---------- */
+code {
+  font-family: "Consolas", "Menlo", "Courier New", monospace;
+  font-size: 0.92em;
+  background: #f0ece2;
+  color: #a04040;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+pre {
+  background: var(--code-bg);
+  color: var(--code-fg);
+  padding: .9rem 1rem;
+  border-radius: 5px;
+  overflow-x: auto;
+  font-size: .88em;
+  line-height: 1.45;
+}
+pre code { background: transparent; color: inherit; padding: 0; }
+.kw  { color: #81a1c1; }
+.str { color: #a3be8c; }
+.com { color: #a2a597; font-style: italic; }
+.num { color: #d08770; }
+.typ { color: #ebcb8b; }
+
+/* ---------- Tables ---------- */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+  background: white;
+  font-size: .95rem;
+}
+th, td {
+  border: 1px solid var(--border);
+  padding: .5rem .7rem;
+  text-align: left;
+  vertical-align: top;
+}
+th { background: var(--accent-soft); color: var(--accent); }
+tr:nth-child(even) td { background: #faf7f0; }
+
+/* ---------- Cards / callouts ---------- */
+.fn-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  padding: .9rem 1.1rem;
+  margin: 1rem 0;
+  border-radius: 3px;
+}
+.fn-card h4 {
+  margin-top: 0;
+  font-family: "Consolas", monospace;
+  color: var(--accent);
+}
+.fn-card .role {
+  color: var(--muted);
+  font-size: .9em;
+  margin-bottom: .4rem;
+  font-style: italic;
+}
+.fn-card dl { margin: .5rem 0 0; }
+.fn-card dt {
+  font-weight: bold;
+  margin-top: .45rem;
+  font-size: .9em;
+  color: #444;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+.fn-card dd {
+  margin: .2rem 0 0 1rem;
+  font-size: .95em;
+}
+
+.tip, .warn, .note {
+  padding: .6rem 1rem;
+  border-radius: 4px;
+  margin: 1rem 0;
+}
+.tip  { background: var(--tip-bg);  border-left: 4px solid var(--tip-border); }
+.warn { background: var(--warn-bg); border-left: 4px solid var(--warn-border); }
+.note { background: var(--note-bg); border-left: 4px solid var(--note-border); }
+.tip strong, .warn strong, .note strong { margin-right: .3em; }
+
+.pipeline-diagram {
+  background: white;
+  border: 1px solid var(--border);
+  padding: 1rem;
+  border-radius: 5px;
+  text-align: left;
+  font-family: "Consolas", monospace;
+  font-size: .85em;
+  line-height: 1.35;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+/* Math block style (MathJax output) */
+.math-block {
+  background: white;
+  border: 1px solid var(--border);
+  padding: .7rem 1rem;
+  margin: .8rem 0;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+/* Inline math tagging (MathJax handles TeX) */
+.math { font-style: italic; }
+
+.sub-tag {
+  display: inline-block;
+  font-size: .72em;
+  padding: 1px 7px;
+  background: #ddd;
+  border-radius: 9px;
+  margin-left: .3rem;
+  color: #555;
+  font-weight: 500;
+  vertical-align: middle;
+}
+.tag-hyp { background: #fadcdc; color: #8b2929; }
+.tag-ell { background: #dff0d8; color: #2e5a2e; }
+.tag-util { background: #e0e0e0; color: #444; }
+.tag-plot { background: #e0dcf0; color: #4a3f7a; }
+.tag-math { background: #ffe9c9; color: #7a4a0e; }
+
+/* Page footer */
+footer.page-foot {
+  margin-top: 4rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: .85em;
+}
+
+/* Next/prev page navigation */
+.page-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  gap: 1rem;
+}
+.page-nav a {
+  flex: 1;
+  padding: .7rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: white;
+  display: block;
+}
+.page-nav a:hover {
+  background: var(--accent-soft);
+  text-decoration: none;
+}
+.page-nav .prev { text-align: left; }
+.page-nav .next { text-align: right; }
+.page-nav .label {
+  display: block;
+  font-size: .75rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+/* Mobile */
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  aside.sidebar {
+    position: static;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  main { padding: 1.5rem 1.1rem 3rem; }
+}
+
+/* Collapsible sub-menu animation */
+aside.sidebar .submenu {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .25s ease;
+}
+aside.sidebar li.open > .submenu,
+aside.sidebar li.active > .submenu {
+  max-height: 2000px;
+}
+aside.sidebar .has-sub > a::after {
+  content: "▸";
+  float: right;
+  font-size: .75em;
+  color: var(--muted);
+  transition: transform .2s ease;
+}
+aside.sidebar li.open.has-sub > a::after,
+aside.sidebar li.active.has-sub > a::after {
+  transform: rotate(90deg);
+  display: inline-block;
+}
+
+/* Formula with description table */
+.formula-table td:first-child {
+  width: 45%;
+  text-align: center;
+  background: #faf7f0;
+}
+.formula-table td:first-child .mjx-container {
+  margin: .2rem 0 !important;
+}

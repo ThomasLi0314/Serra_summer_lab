@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demos — LCStool Docs</title>
+<link rel="stylesheet" href="assets/style.css">
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['$','$'], ['\\(','\\)']], displayMath: [['$$','$$'], ['\\[','\\]']] },
+    svg: { fontCache: 'global' }
+  };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<div class="layout">
+
+<aside class="sidebar">
+  <h1><a href="index.html">LCStool Docs</a></h1>
+  <span class="tag">Serra Lab · Ref v1.0</span>
+  <nav>
+    <ul>
+      <li><a href="index.html">Home</a></li>
+      <li class="has-sub"><a href="math.html">Math Foundations</a>
+        <ul class="submenu">
+          <li><a href="math.html#flow-map">Flow map &amp; deformation gradient</a></li>
+          <li><a href="math.html#cg-tensor">Cauchy-Green tensor</a></li>
+          <li><a href="math.html#ftle">FTLE</a></li>
+          <li><a href="math.html#hyperbolic">Hyperbolic LCS theory</a></li>
+          <li><a href="math.html#elliptic">Elliptic LCS theory</a></li>
+          <li><a href="math.html#lambda-line">λ-lines &amp; null-geodesics</a></li>
+        </ul>
+      </li>
+      <li class="has-sub"><a href="pipeline.html">Pipeline</a>
+        <ul class="submenu">
+          <li><a href="pipeline.html#overview">Overview diagram</a></li>
+          <li><a href="pipeline.html#stage1">Stage 1 — Flow definition</a></li>
+          <li><a href="pipeline.html#stage2">Stage 2 — C &amp; eigen-decomp</a></li>
+          <li><a href="pipeline.html#stage3">Stage 3 — Hyperbolic LCS</a></li>
+          <li><a href="pipeline.html#stage4">Stage 4 — Elliptic LCS</a></li>
+          <li><a href="pipeline.html#stage5">Stage 5 — Plotting</a></li>
+        </ul>
+      </li>
+      <li class="has-sub"><a href="functions.html">Functions</a>
+        <ul class="submenu">
+          <li><a href="functions.html#grid">Grid &amp; flow</a></li>
+          <li><a href="functions.html#cg">Cauchy-Green &amp; FTLE</a></li>
+          <li><a href="functions.html#hyperbolic">Hyperbolic LCS</a></li>
+          <li><a href="functions.html#elliptic">Elliptic LCS</a></li>
+          <li><a href="functions.html#diagnostic">Diagnostics</a></li>
+        </ul>
+      </li>
+      <li class="has-sub"><a href="plotting.html">Plotting</a>
+        <ul class="submenu">
+          <li><a href="plotting.html#setup">setup_figure</a></li>
+          <li><a href="plotting.html#ftle">plot_ftle</a></li>
+          <li><a href="plotting.html#elliptic">plot_elliptic_lcs</a></li>
+          <li><a href="plotting.html#orbit">plot_closed_orbit</a></li>
+          <li><a href="plotting.html#arc">plot_along_arc_length</a></li>
+          <li><a href="plotting.html#discont">plot_orient_discont</a></li>
+          <li><a href="plotting.html#animate">animate_flow</a></li>
+        </ul>
+      </li>
+      <li class="has-sub active open"><a href="demos.html">Demos</a>
+        <ul class="submenu">
+          <li><a href="demos.html#double-gyre">Double Gyre</a></li>
+          <li><a href="demos.html#bickley-jet">Bickley Jet</a></li>
+          <li><a href="demos.html#ocean">Ocean Dataset</a></li>
+        </ul>
+      </li>
+      <li class="has-sub"><a href="howto.html">How-To Guide</a>
+        <ul class="submenu">
+          <li><a href="howto.html#convention">Input conventions</a></li>
+          <li><a href="howto.html#analytical">Analytical field</a></li>
+          <li><a href="howto.html#gridded">Gridded data</a></li>
+          <li><a href="howto.html#workflow">Recommended workflow</a></li>
+        </ul>
+      </li>
+      <li><a href="pitfalls.html">Pitfalls &amp; Tuning</a></li>
+    </ul>
+  </nav>
+</aside>
+
+<main>
+<header class="page-head">
+  <h1>Demo Cases</h1>
+  <p class="sub">Three canonical flows that ship with LCStool — their equations, their parameters, and what to expect.</p>
+</header>
+
+<p>Each demo folder contains three key files:</p>
+<ul>
+  <li><code>derivative.m</code> — the velocity RHS.</li>
+  <li><code>elliptic_hyperbolic_lcs.m</code> — the driver script that runs the full pipeline.</li>
+  <li><code>flow_animation.m</code> — a sanity-check animation driver.</li>
+</ul>
+
+<p>To run any demo from the MATLAB prompt:</p>
+<pre><code>cd(fullfile(<span class="str">'demo'</span>, <span class="str">'double_gyre'</span>))   <span class="com">% or bickley_jet / ocean_dataset</span>
+addpath(fullfile(<span class="str">'..'</span>, <span class="str">'..'</span>))
+elliptic_hyperbolic_lcs</code></pre>
+
+<!-- ================= DOUBLE GYRE ================= -->
+<h2 id="double-gyre">1. Double Gyre <span class="sub-tag tag-util">textbook</span></h2>
+
+<h3>Physical setup</h3>
+<p>The classic time-periodic double gyre of Shadden et al. (DOI:10.1016/j.physd.2005.10.007) —
+two counter-rotating cells on $[0,2]\times[0,1]$ whose dividing line oscillates sinusoidally:</p>
+
+<div class="math-block">
+$$ \psi(x,y,t) = A\,\sin\!\bigl(\pi f(x,t)\bigr)\,\sin(\pi y), $$
+$$ f(x,t) = a(t)\,x^2 + b(t)\,x,\quad a(t) = \varepsilon\sin(\omega t),\ b(t) = 1 - 2\varepsilon\sin(\omega t). $$
+</div>
+
+<p>The velocity follows from $\mathbf{v} = (-\partial_y \psi,\ \partial_x \psi)$:</p>
+
+<div class="math-block">
+$$ u = -\pi A\,\sin(\pi f)\,\cos(\pi y), \qquad
+   v = \phantom{-}\pi A\,\cos(\pi f)\,\sin(\pi y)\,\bigl(2a(t)x + b(t)\bigr). $$
+</div>
+
+<h3>MATLAB implementation</h3>
+<p>Inside <code>demo/double_gyre/derivative.m</code>:</p>
+<pre><code>a = epsilon*sin(omega*t);
+b = 1 - 2*epsilon*sin(omega*t);
+forcing = a*x(idx1).^2 + b*x(idx1);
+
+derivative_(idx1) = -pi*amplitude*sin(pi*forcing).*cos(pi*x(idx2));
+derivative_(idx2) =  pi*amplitude*cos(pi*forcing).*sin(pi*x(idx2)).*(2*a*x(idx1) + b);</code></pre>
+
+<p>The <code>idx1</code>/<code>idx2</code> dance is the stacking convention — odd indices hold $x$, even hold $y$.
+The equation-of-variation block below adds four more entries per particle with the 2×2 velocity gradient $\nabla \mathbf{v}$.</p>
+
+<h3>Driver parameters</h3>
+<table>
+  <tr><th>Parameter</th><th>Value</th><th>Meaning</th></tr>
+  <tr><td><code>epsilon</code></td><td>0.1</td><td>perturbation amplitude of dividing line</td></tr>
+  <tr><td><code>amplitude</code></td><td>0.1</td><td>stream-function amplitude $A$</td></tr>
+  <tr><td><code>omega</code></td><td>$\pi/5$</td><td>perturbation frequency</td></tr>
+  <tr><td><code>timespan</code></td><td>[0, 10]</td><td>advection window (one full oscillation period is $2\pi/\omega = 10$)</td></tr>
+  <tr><td><code>domain</code></td><td>[0,2; 0,1]</td><td>physical domain</td></tr>
+  <tr><td><code>resolutionX</code></td><td>500</td><td>$\Rightarrow N_y \approx 250$, $\Delta x \approx 4\cdot 10^{-3}$</td></tr>
+  <tr><td><code>incompressible</code></td><td><code>true</code></td><td>enforce $\lambda_1 \lambda_2 = 1$</td></tr>
+  <tr><td><code>lambda</code></td><td>0.93 : 0.01 : 1.07</td><td>λ-sweep for elliptic LCS</td></tr>
+  <tr><td><code>poincareSection(1)</code></td><td>[.55,.55; .1,.1]</td><td>diagonal through left vortex core</td></tr>
+  <tr><td><code>poincareSection(2)</code></td><td>[1.53,.45; 1.95,.05]</td><td>diagonal through right vortex core</td></tr>
+  <tr><td><code>shrinkLineMaxLength</code></td><td>20</td><td>arc-length cap for repelling LCSs</td></tr>
+  <tr><td><code>shrinkLineLocalMaxDistance</code></td><td>2·$\Delta x$</td><td>minimum seed separation</td></tr>
+</table>
+
+<h3>Expected output</h3>
+<ul>
+  <li>Two green elliptic LCSs, one inside each gyre.</li>
+  <li>A dense web of red shrink lines (repelling) and blue stretch lines (attracting) sweeping across and between the gyres.</li>
+  <li>The central S-shaped repelling manifold is the most visually striking feature — it is the famous "transport barrier" between the two gyres.</li>
+</ul>
+
+<h3>Minimal animation driver</h3>
+<pre><code><span class="com">% demo/double_gyre/flow_animation.m</span>
+epsilon = .1; amplitude = .1; omega = pi/5;
+flow.imposeIncompressibility = true;
+flow.derivative = @(t,x,useEoV) derivative(t, x, useEoV, epsilon, amplitude, omega);
+flow.domain     = [0,2; 0,1];
+flow.timespan   = [0, 20];
+flow.resolution = [2, 1]*10;
+flow = animate_flow(flow);</code></pre>
+
+<!-- ================= BICKLEY JET ================= -->
+<h2 id="bickley-jet">2. Bickley Jet <span class="sub-tag tag-util">geophysical</span></h2>
+
+<h3>Physical setup</h3>
+<p>An idealised zonal jet with three travelling Rossby-wave perturbations, on a zonally
+periodic channel (Beron-Vera et al., DOI:10.1016/j.physd.2012.06.012). Stream function:</p>
+
+<div class="math-block">
+$$
+\psi(x,y,t) = U\,L_y\!\left[\tanh\!\bigl(y/L_y\bigr)
+   - \operatorname{sech}^2\!\bigl(y/L_y\bigr)\,\Re\!\sum_{n=1}^{3} \varepsilon_n\, f_n(t)\, e^{i\,k_n x}\right]
+   - c_3\,y,
+$$
+$$ k_n = \tfrac{2\pi n}{L_x},\quad c_2 = 0.205\,U,\ c_3 = 0.461\,U,\quad \sigma_1 = \tfrac{1}{2} k_2 (c_2 - c_3),\ \sigma_2 = 2\sigma_1.
+$$
+</div>
+
+<p>Three forcing cases are implemented:</p>
+<ul>
+  <li><strong>Case 1</strong> — time-periodic: $f_n(t) = e^{i \sigma_n t}$.</li>
+  <li><strong>Case 2, 3</strong> — time-aperiodic: $f_1(t) = f_2(t) = \alpha\,\phi_1\!\bigl(t/T_{BV}/5\bigr)$ where $\phi_1$ is the first coordinate of the forced-damped Duffing oscillator
+  $$ \ddot\phi + 0.1\,\dot\phi + \phi^3 = 11\cos(\tau). $$
+  The oscillator is integrated externally (see <code>d_phi.m</code>) and the solution sampled at run time.</li>
+</ul>
+
+<h3>Driver parameters</h3>
+<table>
+  <tr><th>Parameter</th><th>Value</th><th>Meaning</th></tr>
+  <tr><td><code>u</code></td><td>62.66 m/s</td><td>jet speed $U$</td></tr>
+  <tr><td><code>lengthX</code></td><td>$\pi\,R_{\oplus}$</td><td>zonal channel length (half Earth circumference)</td></tr>
+  <tr><td><code>lengthY</code></td><td>1.77·10⁶ m</td><td>jet width $L_y$</td></tr>
+  <tr><td><code>epsilon</code></td><td>[0.075, 0.4, 0.3]</td><td>$(\varepsilon_1,\varepsilon_2,\varepsilon_3)$ (cases 1, 3 divide first two by 10)</td></tr>
+  <tr><td><code>timespan</code></td><td>[0, 4·L<sub>x</sub>/U]</td><td>four transit times</td></tr>
+  <tr><td><code>domain</code></td><td>[0, L<sub>x</sub>; ±2.25·L<sub>y</sub>]</td><td>wide in $y$ to accommodate meanders</td></tr>
+  <tr><td><code>periodicBc</code></td><td>[true, false]</td><td>essential — zonal periodicity</td></tr>
+  <tr><td><code>5 Poincaré sections</code></td><td>see driver</td><td>one per expected vortex along the jet</td></tr>
+  <tr><td><code>lambda</code></td><td>0.9 : 0.01 : 1.1</td><td>broad λ-sweep</td></tr>
+  <tr><td><code>shrinkLineMaxLength</code></td><td>$10^8$ m</td><td>≫ channel; strainlines wrap many times</td></tr>
+</table>
+
+<h3>MATLAB implementation notes</h3>
+<pre><code><span class="com">% Aperiodic forcing setup (case 3)</span>
+phiTimespan = [0, 25];
+phiInitial  = [0, 0];
+phiSol      = ode45(@d_phi, phiTimespan, phiInitial);
+phi1        = deval(phiSol, linspace(0,25,1e5), 1);
+phi1Max     = max(phi1);
+
+<span class="com">% Pass phiSol and phi1Max through the derivative wrapper</span>
+lDerivative = @(t,x,~) derivative(t, x, false, u, lengthX, lengthY, epsilon, 3, phiSol, phi1Max);</code></pre>
+
+<h3>Expected output</h3>
+<ul>
+  <li>A chain of green elliptic LCSs, one per Rossby-wave cat's eye, lined up along the jet.</li>
+  <li>Red repelling manifolds separating adjacent vortices.</li>
+  <li>A strong mid-channel band of attracting manifolds along the jet core.</li>
+</ul>
+
+<h3>Why this demo matters</h3>
+<p>It is the cleanest published example of elliptic LCSs acting as material vortex boundaries in a perturbed shear flow, and it is the canonical benchmark for geophysical LCS methods.</p>
+
+<!-- ================= OCEAN ================= -->
+<h2 id="ocean">3. Ocean Dataset <span class="sub-tag tag-util">real data</span></h2>
+
+<h3>Physical setup</h3>
+<p>A 30-day slice of AVISO surface geostrophic velocities in the Agulhas region
+(south-west Indian Ocean). The data file <code>ocean_geostrophic_velocity.mat</code>
+contains:</p>
+<ul>
+  <li><code>time</code> — vector of days since arbitrary origin,</li>
+  <li><code>lat, lon</code> — 1-D grids in degrees,</li>
+  <li><code>vLon, vLat</code> — 3-D arrays of size <code>[nT, nLat, nLon]</code> with velocities in deg/day.</li>
+</ul>
+
+<h3>MATLAB implementation</h3>
+<pre><code><span class="com">% --- driver ---</span>
+load(<span class="str">'ocean_geostrophic_velocity.mat'</span>)
+<span class="com">% Zero-pad boundaries to prevent NaNs leaking</span>
+vLon(:,[1,end],:) = 0;  vLon(:,:,[1,end]) = 0;
+vLat(:,[1,end],:) = 0;  vLat(:,:,[1,end]) = 0;
+
+vLonInterpolant = griddedInterpolant({time, lat, lon}, vLon, <span class="str">'spline'</span>);
+vLatInterpolant = griddedInterpolant({time, lat, lon}, vLat, <span class="str">'spline'</span>);
+
+lDerivative = @(t,x,~) derivative(t, x, vLonInterpolant, vLatInterpolant);
+incompressible = true;</code></pre>
+
+<p>The <code>derivative</code> itself is trivially short:</p>
+<pre><code><span class="com">% demo/ocean_dataset/derivative.m</span>
+nPosition = numel(position)/2;
+derivative_ = nan(nPosition*2, 1);
+derivative_(1:2:end-1) = VX_interpolant(time*ones(nPosition,1), position(2:2:end), position(1:2:end-1));
+derivative_(2:2:end)   = VY_interpolant(time*ones(nPosition,1), position(2:2:end), position(1:2:end-1));</code></pre>
+
+<h3>Driver parameters</h3>
+<table>
+  <tr><th>Parameter</th><th>Value</th><th>Meaning</th></tr>
+  <tr><td><code>timespan</code></td><td>[100, 130]</td><td>30 days of data</td></tr>
+  <tr><td><code>domain</code></td><td>[0, 6; −34, −28]</td><td>longitude / latitude bounding box</td></tr>
+  <tr><td><code>resolutionX</code></td><td>400</td><td>≈0.015° per cell</td></tr>
+  <tr><td><code>eigenvalueFromMainGrid</code></td><td><code>false</code></td><td>aux-grid eigenvalues are less noisy for real data</td></tr>
+  <tr><td><code>auxGridRelDelta</code></td><td>0.01</td><td>default auxiliary spacing</td></tr>
+  <tr><td><code>5 Poincaré sections</code></td><td>placed by hand</td><td>over suspected mesoscale eddies</td></tr>
+  <tr><td><code>lambda</code></td><td>0.9 : 0.02 : 1.1</td><td>coarser sweep than analytical demos</td></tr>
+  <tr><td><code>lambdaLineOdeSolverOptions</code></td><td><code>odeset('relTol',1e-6,'initialStep',1e-2)</code></td><td>tighter for the η-field integration</td></tr>
+</table>
+
+<h3>Key take-aways when adapting to your own data</h3>
+<ol>
+  <li>Use <code>griddedInterpolant({t, y, x}, V, 'spline')</code> — note the axis order <code>t, y, x</code>, not <code>t, x, y</code>.</li>
+  <li>Zero-pad boundaries of <code>vLon, vLat</code> at indices 1 and end along each spatial axis — stops trajectories at the edge from producing NaN and polluting their neighbours.</li>
+  <li>Pick the physical resolution the velocity field can <em>support</em>. Oversampling amplifies interpolation noise into $C$.</li>
+  <li>Use degrees/days consistently throughout (so velocities match position units). For lat/lon at high latitudes, either project to a local flat plane first or add metric factors.</li>
+  <li>Set <code>eigenvalueFromMainGrid = false</code> — on noisy data, aux-grid eigenvalues behave better.</li>
+</ol>
+
+<div class="page-nav">
+  <a href="plotting.html" class="prev"><span class="label">← Prev</span>Plotting</a>
+  <a href="howto.html" class="next"><span class="label">Next →</span>How-To Guide</a>
+</div>
+
+<footer class="page-foot">
+  Generated for the Serra lab reference notes.
+</footer>
+</main>
+
+</div>
+<script src="assets/nav.js"></script>
+</body>
+</html>

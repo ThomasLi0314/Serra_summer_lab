@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How-To Guide — LCStool Docs</title>
+<link rel="stylesheet" href="assets/style.css">
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['$','$'], ['\\(','\\)']], displayMath: [['$$','$$'], ['\\[','\\]']] },
+    svg: { fontCache: 'global' }
+  };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<div class="layout">
+
+<aside class="sidebar">
+  <h1><a href="index.html">LCStool Docs</a></h1>
+  <span class="tag">Serra Lab · Ref v1.0</span>
+  <nav>
+    <ul>
+      <li><a href="index.html">Home</a></li>
+      <li class="has-sub"><a href="math.html">Math Foundations</a>
+        <ul class="submenu">
+          <li><a href="math.html#flow-map">Flow map &amp; deformation gradient</a></li>
+          <li><a href="math.html#cg-tensor">Cauchy-Green tensor</a></li>
+          <li><a href="math.html#ftle">FTLE</a></li>
+          <li><a href="math.html#hyperbolic">Hyperbolic LCS theory</a></li>
+          <li><a href="math.html#elliptic">Elliptic LCS theory</a></li>
+          <li><a href="math.html#lambda-line">λ-lines &amp; null-geodesics</a></li>
+        </ul>
+      </li>
+      <li class="has-sub"><a href="pipeline.html">Pipeline</a>
+        <ul class="submenu">
+          <li><a href="pipeline.html#overview">Overview diagram</a></li>
+          <li><a href="pipeline.html#stage1">Stage 1 — Flow definition</a></li>
+          <li><a href="pipeline.html#stage2">Stage 2 — C &amp; eigen-decomp</a></li>
+          <li><a href="pipeline.html#stage3">Stage 3 — Hyperbolic LCS</a></li>
+          <li><a href="pipeline.html#stage4">Stage 4 — Elliptic LCS</a></li>
+          <li><a href="pipeline.html#stage5">Stage 5 — Plotting</a></li>
+        </ul>
+      </li>
+      <li class="has-sub"><a href="functions.html">Functions</a>
+        <ul class="submenu">
+          <li><a href="functions.html#grid">Grid &amp; flow</a></li>
+          <li><a href="functions.html#cg">Cauchy-Green &amp; FTLE</a></li>
+          <li><a href="functions.html#hyperbolic">Hyperbolic LCS</a></li>
+          <li><a href="functions.html#elliptic">Elliptic LCS</a></li>
+          <li><a href="functions.html#diagnostic">Diagnostics</a></li>
+        </ul>
+      </li>
+      <li class="has-sub"><a href="plotting.html">Plotting</a>
+        <ul class="submenu">
+          <li><a href="plotting.html#setup">setup_figure</a></li>
+          <li><a href="plotting.html#ftle">plot_ftle</a></li>
+          <li><a href="plotting.html#elliptic">plot_elliptic_lcs</a></li>
+          <li><a href="plotting.html#orbit">plot_closed_orbit</a></li>
+          <li><a href="plotting.html#arc">plot_along_arc_length</a></li>
+          <li><a href="plotting.html#discont">plot_orient_discont</a></li>
+          <li><a href="plotting.html#animate">animate_flow</a></li>
+        </ul>
+      </li>
+      <li class="has-sub"><a href="demos.html">Demos</a>
+        <ul class="submenu">
+          <li><a href="demos.html#double-gyre">Double Gyre</a></li>
+          <li><a href="demos.html#bickley-jet">Bickley Jet</a></li>
+          <li><a href="demos.html#ocean">Ocean Dataset</a></li>
+        </ul>
+      </li>
+      <li class="has-sub active open"><a href="howto.html">How-To Guide</a>
+        <ul class="submenu">
+          <li><a href="howto.html#convention">Input conventions</a></li>
+          <li><a href="howto.html#analytical">Analytical field</a></li>
+          <li><a href="howto.html#gridded">Gridded data</a></li>
+          <li><a href="howto.html#workflow">Recommended workflow</a></li>
+        </ul>
+      </li>
+      <li><a href="pitfalls.html">Pitfalls &amp; Tuning</a></li>
+    </ul>
+  </nav>
+</aside>
+
+<main>
+<header class="page-head">
+  <h1>How-To Guide</h1>
+  <p class="sub">Apply LCStool to your own velocity field — from the first derivative wrapper to a complete driver.</p>
+</header>
+
+<!-- ============ CONVENTIONS ============ -->
+<h2 id="convention">1. Input conventions you must obey</h2>
+
+<p>LCStool is strict about how the velocity is supplied. Get this wrong and your
+<code>eig_cgStrain</code> call will produce silent garbage.</p>
+
+<h3>The <code>derivative</code> function signature</h3>
+
+<p>Three arguments, in this order:</p>
+<ol>
+  <li><code>t</code> — scalar time.</li>
+  <li><code>x</code> — column vector of stacked positions.</li>
+  <li><code>useEoV</code> — logical flag; set to <code>false</code> when wrapping unless you know you need the equation of variation.</li>
+</ol>
+
+<h3>Stacking format</h3>
+
+<p>If you are integrating $N$ particles, the input is</p>
+
+<div class="math-block">
+$$ \mathbf{x}_{\text{in}} = [x_1,\, y_1,\, x_2,\, y_2,\, \ldots,\, x_N,\, y_N]^\top \in \mathbb{R}^{2N}. $$
+</div>
+
+<p>and you must return a column of the same length:</p>
+
+<div class="math-block">
+$$ \mathbf{v}_{\text{out}} = [u_1,\, v_1,\, u_2,\, v_2,\, \ldots,\, u_N,\, v_N]^\top \in \mathbb{R}^{2N}. $$
+</div>
+
+<p>In MATLAB, the standard index pattern is:</p>
+<pre><code>idxX = 1:2:numel(x)-1;  <span class="com">% odd indices  — particle x-positions</span>
+idxY = 2:2:numel(x);    <span class="com">% even indices — particle y-positions</span>
+
+dydt = nan(size(x));
+dydt(idxX) = u(t, x(idxX), x(idxY));
+dydt(idxY) = v(t, x(idxX), x(idxY));</code></pre>
+
+<h3>Equation-of-variation extension (optional)</h3>
+<p>If you want <code>'method','equationOfVariation'</code> in <code>eig_cgStrain</code>, each particle
+carries 4 additional states ($\Phi_{11}, \Phi_{12}, \Phi_{21}, \Phi_{22}$). The stride
+becomes 6 instead of 2; the extra entries satisfy $\dot\Phi = \nabla\mathbf{v}\,\Phi$.
+You can copy the pattern from <code>demo/double_gyre/derivative.m</code> — it is about a dozen lines.</p>
+
+<div class="note"><strong>In practice</strong>, the default finite-difference method works for
+virtually all use cases and does not require you to code the EoV block.</div>
+
+<!-- ============ ANALYTICAL ============ -->
+<h2 id="analytical">2. Workflow for an analytical velocity field</h2>
+
+<p>Scenario: you have equations for $\mathbf{v}(t, \mathbf{x})$ — e.g., a stream function or
+a system of ODEs — and want to find LCSs on some time interval.</p>
+
+<h3>Step 1 — Write the derivative</h3>
+
+<p>Create <code>my_derivative.m</code>:</p>
+
+<pre><code><span class="kw">function</span> dydt = my_derivative(t, x, useEoV)
+    idxX = 1:2:numel(x)-1;
+    idxY = 2:2:numel(x);
+    dydt = nan(size(x));
+
+    <span class="com">% --- replace with your velocity ---</span>
+    dydt(idxX) =  sin(x(idxY)) + 0.1*cos(t);
+    dydt(idxY) = -cos(x(idxX));
+    <span class="com">% ----------------------------------</span>
+
+    <span class="kw">if</span> useEoV
+        error(<span class="str">'my_derivative:noEoV'</span>, <span class="str">'EoV not implemented; call with useEoV=false'</span>);
+    <span class="kw">end</span>
+<span class="kw">end</span></code></pre>
+
+<h3>Step 2 — Complete driver template</h3>
+
+<pre><code><span class="com">%% 0. Add LCStool to the path</span>
+addpath(<span class="str">'path/to/LCStool-master/LCStool-1-0'</span>);
+
+<span class="com">%% 1. Domain, grid, time</span>
+domain      = [0, 2*pi; 0, 2*pi];
+timespan    = [0, 20];
+resolutionX = 400;
+[resolutionY, deltaX] = equal_resolution(domain, resolutionX);
+resolution  = [resolutionX, resolutionY];
+
+<span class="com">%% 2. Velocity wrapper</span>
+lDerivative   = @(t,x,~) my_derivative(t, x, false);
+incompressible = true;   <span class="com">% set false if flow is not area-preserving</span>
+
+<span class="com">%% 3. Cauchy-Green eigen-decomposition</span>
+cgOde = odeset(<span class="str">'relTol'</span>, 1e-5);
+[cgV, cgD] = eig_cgStrain(lDerivative, domain, resolution, timespan, ...
+                <span class="str">'incompressible'</span>, incompressible, ...
+                <span class="str">'odeSolverOptions'</span>, cgOde);
+
+<span class="com">%% 4. (Optional) Quick FTLE sanity check</span>
+ftleField = ftle(cgD(:,2), diff(timespan));
+hF = setup_figure(domain);
+plot_ftle(hF, domain, resolution, ftleField);
+title(hF, <span class="str">'FTLE — look for ridges'</span>);
+drawnow;
+
+<span class="com">%% 5. Hyperbolic LCSs</span>
+shrinkOde = odeset(<span class="str">'relTol'</span>, 1e-6);
+
+shrinkLine = seed_curves_from_lambda_max( ...
+     2*deltaX, 20, cgD(:,2), cgV(:,1:2), domain, resolution, ...
+     <span class="str">'odeSolverOptions'</span>, shrinkOde);
+
+stretchLine = seed_curves_from_lambda_max( ...
+    10*deltaX, 20, -cgD(:,1), cgV(:,3:4), domain, resolution, ...
+    <span class="str">'odeSolverOptions'</span>, shrinkOde);
+
+<span class="com">%% 6. Elliptic LCSs — pick Poincaré sections from the FTLE plot</span>
+poincareSection = struct(<span class="str">'endPosition'</span>,{},<span class="str">'numPoints'</span>,{},<span class="str">'orbitMaxLength'</span>,{});
+poincareSection(1).endPosition = [pi, pi; pi+1, pi+1];   <span class="com">% EDIT: through vortex core</span>
+[poincareSection.numPoints]    = deal(100);
+<span class="kw">for</span> i = 1:numel(poincareSection)
+    r = hypot(diff(poincareSection(i).endPosition(:,1)), ...
+              diff(poincareSection(i).endPosition(:,2)));
+    poincareSection(i).orbitMaxLength = 2*(2*pi*r);
+<span class="kw">end</span>
+lambda = 0.9 : 0.02 : 1.1;
+
+[clPos, clNeg] = poincare_closed_orbit_range(domain, resolution, cgV, cgD, ...
+                    lambda, poincareSection, <span class="str">'forceEtaComplexNaN'</span>, true);
+ellipticLcs = [elliptic_lcs(clPos), elliptic_lcs(clNeg)];
+
+<span class="com">%% 7. Trim hyperbolic curves that enter elliptic regions</span>
+<span class="kw">for</span> i = 1:numel(ellipticLcs)
+    shrinkLine  = remove_strain_in_elliptic(shrinkLine,  ellipticLcs{i});
+    stretchLine = remove_strain_in_elliptic(stretchLine, ellipticLcs{i});
+<span class="kw">end</span>
+
+<span class="com">%% 8. Final plot</span>
+hAx = setup_figure(domain);
+title(hAx, <span class="str">'LCSs'</span>);
+hEll = plot_elliptic_lcs(hAx, ellipticLcs);
+set(hEll, <span class="str">'color'</span>, [0 .6 0], <span class="str">'linewidth'</span>, 2);
+cellfun(@(p) plot(hAx, p(:,1), p(:,2), <span class="str">'r'</span>), shrinkLine);
+cellfun(@(p) plot(hAx, p(:,1), p(:,2), <span class="str">'b'</span>), stretchLine);
+uistack(hEll, <span class="str">'top'</span>);</code></pre>
+
+<div class="tip"><strong>Tip.</strong> The only step that usually needs iteration is
+<strong>placing the Poincaré sections</strong>. Use the FTLE map from step 4 to eyeball
+where the vortex cores are, then place each section so it <em>crosses exactly one vortex</em>
+and is longer than the expected orbit diameter.</div>
+
+<!-- ============ GRIDDED ============ -->
+<h2 id="gridded">3. Workflow for gridded velocity data</h2>
+
+<p>Scenario: you have a CFD/DNS output, satellite altimetry, or model output as arrays on
+a regular spatio-temporal grid.</p>
+
+<h3>Step 1 — Build interpolants</h3>
+
+<p>Suppose you have variables</p>
+<ul>
+  <li><code>t</code> — vector of <code>nT</code> time stamps.</li>
+  <li><code>xGrid</code>, <code>yGrid</code> — vectors of <code>nX</code> and <code>nY</code> grid points.</li>
+  <li><code>U</code>, <code>V</code> — 3-D arrays of size <code>[nT, nY, nX]</code> (note: Y before X!).</li>
+</ul>
+
+<pre><code><span class="com">% Zero velocity at spatial boundaries to stop NaN leakage</span>
+U(:, [1,end], :) = 0;  U(:, :, [1,end]) = 0;
+V(:, [1,end], :) = 0;  V(:, :, [1,end]) = 0;
+
+U_int = griddedInterpolant({t, yGrid, xGrid}, U, <span class="str">'spline'</span>);
+V_int = griddedInterpolant({t, yGrid, xGrid}, V, <span class="str">'spline'</span>);</code></pre>
+
+<h3>Step 2 — Derivative wrapper</h3>
+
+<pre><code><span class="kw">function</span> dydt = my_deriv_data(t, pos, Uin, Vin)
+    N    = numel(pos)/2;
+    xP   = pos(1:2:end-1);
+    yP   = pos(2:2:end);
+    tCol = t*ones(N, 1);
+    dydt = nan(2*N, 1);
+    dydt(1:2:end-1) = Uin(tCol, yP, xP);     <span class="com">% note: (t, y, x) order</span>
+    dydt(2:2:end)   = Vin(tCol, yP, xP);
+<span class="kw">end</span>
+
+lDerivative = @(t,x,~) my_deriv_data(t, x, U_int, V_int);</code></pre>
+
+<p>The rest of the driver (stages 1–8 from §2) is <strong>identical</strong>. Only the
+derivative construction differs.</p>
+
+<h3>Checklist for gridded data</h3>
+<ul>
+  <li><strong>Units.</strong> If positions are in metres and velocities in m/s, keep <code>timespan</code> in seconds. Mixed units (common mistake) produce nonsense.</li>
+  <li><strong>Zero-padding.</strong> The boundary layer of your velocity arrays must be zero; otherwise <code>griddedInterpolant</code>'s <code>'spline'</code> method extrapolates wildly at the edge.</li>
+  <li><strong>Spatial resolution.</strong> Set <code>resolutionX</code> so $\Delta x$ is close to the native grid spacing of your data. Oversampling amplifies interpolation noise into $C$.</li>
+  <li><strong>Longitude/latitude.</strong> For lat/lon data at high latitudes, project to a local flat plane first or embed metric factors in your derivative.</li>
+  <li><strong>Eigenvalue source.</strong> On noisy data, set <code>'eigenvalueFromMainGrid', false</code> — aux-grid eigenvalues are less noisy.</li>
+</ul>
+
+<!-- ============ WORKFLOW ============ -->
+<h2 id="workflow">4. Recommended debugging workflow</h2>
+
+<p>Don't jump straight to the full LCS pipeline. Stage your work:</p>
+
+<ol>
+  <li><strong>Animate first.</strong> Build a minimal <code>flow</code> struct (see
+     <a href="plotting.html#animate"><code>animate_flow</code></a>) with a coarse grid
+     (<code>resolution = [20, 10]</code>) and run <code>animate_flow</code>. Does the
+     motion look right? If not, fix your <code>derivative</code>.</li>
+
+  <li><strong>FTLE next.</strong> Run <code>eig_cgStrain</code> at coarse resolution
+     (e.g. <code>resolutionX = 200</code>) and plot FTLE with <code>plot_ftle</code>.
+     Ridges should be continuous and visually plausible. If it looks pixelated or noisy,
+     tighten <code>odeSolverOptions</code> (e.g. <code>'relTol', 1e-7</code>) or increase
+     resolution.</li>
+
+  <li><strong>Check stats.</strong> Run <code>cgStrain_stats</code> if it's available in your workflow:
+     <ul>
+       <li>Negative eigenvalues &gt; 0 means your ODE tolerances are too loose.</li>
+       <li>Mean $|\det C - 1| \gg 10^{-3}$ on an incompressible flow means the same.</li>
+     </ul></li>
+
+  <li><strong>Hyperbolic LCSs.</strong> Now run <code>seed_curves_from_lambda_max</code>. Start with
+     <code>nMaxCurves = 20</code> to keep the figure readable; increase later.</li>
+
+  <li><strong>Elliptic LCSs last.</strong> This is the fussiest step. Place Poincaré sections
+     one-by-one through cores identified in step 2. Turn on <code>'showGraph', true</code> in
+     <code>poincare_closed_orbit_range</code> so you can see the return-distance curves and
+     zero-crossings — this is by far the best debugging aid when no closed orbits are detected.</li>
+
+  <li><strong>Refine.</strong> Once the pipeline succeeds, increase resolution (e.g. <code>resolutionX = 500–1000</code>), tighten tolerances, and re-run for publication-quality figures.</li>
+</ol>
+
+<h2>Quick recipe card: "I just want FTLE"</h2>
+<pre><code>lDerivative = @(t,x,~) my_derivative(t, x, false);
+[~, cgD]    = eig_cgStrain(lDerivative, domain, resolution, timespan);
+ftleField   = ftle(cgD(:,2), diff(timespan));
+plot_ftle(setup_figure(domain), domain, resolution, ftleField);</code></pre>
+
+<h2>Quick recipe card: "I just want elliptic LCSs"</h2>
+<pre><code>[cgV, cgD] = eig_cgStrain(lDerivative, domain, resolution, timespan, <span class="str">'incompressible'</span>, true);
+[clPos, clNeg] = poincare_closed_orbit_range(domain, resolution, cgV, cgD, lambda, poincareSection, <span class="str">'forceEtaComplexNaN'</span>, true);
+ellipticLcs = [elliptic_lcs(clPos), elliptic_lcs(clNeg)];
+hAx = setup_figure(domain);
+plot_elliptic_lcs(hAx, ellipticLcs);</code></pre>
+
+<div class="page-nav">
+  <a href="demos.html" class="prev"><span class="label">← Prev</span>Demos</a>
+  <a href="pitfalls.html" class="next"><span class="label">Next →</span>Pitfalls &amp; Tuning</a>
+</div>
+
+<footer class="page-foot">
+  Generated for the Serra lab reference notes.
+</footer>
+</main>
+
+</div>
+<script src="assets/nav.js"></script>
+</body>
+</html>

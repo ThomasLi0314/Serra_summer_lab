@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LCStool Documentation — Home</title>
+<link rel="stylesheet" href="assets/style.css">
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['$','$'], ['\\(','\\)']] },
+    svg: { fontCache: 'global' }
+  };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<div class="layout">
+
+<aside class="sidebar">
+  <h1><a href="index.html">LCStool Docs</a></h1>
+  <span class="tag">Serra Lab · Ref v1.0</span>
+  <nav>
+    <ul>
+      <li><a href="index.html">Home</a></li>
+
+      <li class="has-sub">
+        <a href="math.html">Math Foundations</a>
+        <ul class="submenu">
+          <li><a href="math.html#flow-map">Flow map &amp; deformation gradient</a></li>
+          <li><a href="math.html#cg-tensor">Cauchy-Green tensor</a></li>
+          <li><a href="math.html#ftle">FTLE</a></li>
+          <li><a href="math.html#hyperbolic">Hyperbolic LCS theory</a></li>
+          <li><a href="math.html#elliptic">Elliptic LCS theory</a></li>
+          <li><a href="math.html#lambda-line">λ-lines &amp; null-geodesics</a></li>
+        </ul>
+      </li>
+
+      <li class="has-sub">
+        <a href="pipeline.html">Pipeline</a>
+        <ul class="submenu">
+          <li><a href="pipeline.html#overview">Overview diagram</a></li>
+          <li><a href="pipeline.html#stage1">Stage 1 — Flow definition</a></li>
+          <li><a href="pipeline.html#stage2">Stage 2 — C &amp; eigen-decomp</a></li>
+          <li><a href="pipeline.html#stage3">Stage 3 — Hyperbolic LCS</a></li>
+          <li><a href="pipeline.html#stage4">Stage 4 — Elliptic LCS</a></li>
+          <li><a href="pipeline.html#stage5">Stage 5 — Plotting</a></li>
+        </ul>
+      </li>
+
+      <li class="has-sub">
+        <a href="functions.html">Functions</a>
+        <ul class="submenu">
+          <li><a href="functions.html#grid">Grid &amp; flow</a></li>
+          <li><a href="functions.html#cg">Cauchy-Green &amp; FTLE</a></li>
+          <li><a href="functions.html#hyperbolic">Hyperbolic LCS</a></li>
+          <li><a href="functions.html#elliptic">Elliptic LCS</a></li>
+          <li><a href="functions.html#diagnostic">Diagnostics</a></li>
+        </ul>
+      </li>
+
+      <li class="has-sub">
+        <a href="plotting.html">Plotting</a>
+        <ul class="submenu">
+          <li><a href="plotting.html#setup">setup_figure</a></li>
+          <li><a href="plotting.html#ftle">plot_ftle</a></li>
+          <li><a href="plotting.html#elliptic">plot_elliptic_lcs</a></li>
+          <li><a href="plotting.html#orbit">plot_closed_orbit</a></li>
+          <li><a href="plotting.html#arc">plot_along_arc_length</a></li>
+          <li><a href="plotting.html#discont">plot_orient_discont</a></li>
+          <li><a href="plotting.html#animate">animate_flow</a></li>
+        </ul>
+      </li>
+
+      <li class="has-sub">
+        <a href="demos.html">Demos</a>
+        <ul class="submenu">
+          <li><a href="demos.html#double-gyre">Double Gyre</a></li>
+          <li><a href="demos.html#bickley-jet">Bickley Jet</a></li>
+          <li><a href="demos.html#ocean">Ocean Dataset</a></li>
+        </ul>
+      </li>
+
+      <li class="has-sub">
+        <a href="howto.html">How-To Guide</a>
+        <ul class="submenu">
+          <li><a href="howto.html#convention">Input conventions</a></li>
+          <li><a href="howto.html#analytical">Analytical field</a></li>
+          <li><a href="howto.html#gridded">Gridded data</a></li>
+          <li><a href="howto.html#workflow">Recommended workflow</a></li>
+        </ul>
+      </li>
+
+      <li><a href="pitfalls.html">Pitfalls &amp; Tuning</a></li>
+    </ul>
+  </nav>
+</aside>
+
+<main>
+<header class="page-head">
+  <h1>LCStool — A Complete Reference</h1>
+  <p class="sub">Computing Lagrangian Coherent Structures in 2D flows with the ETH Zürich MATLAB toolbox (v1.0).</p>
+</header>
+
+<h2>What is LCStool?</h2>
+<p><strong>LCStool</strong> is a MATLAB toolbox developed by George Haller's group at ETH Zürich
+(<em>Onu, Huhn &amp; Haller, J. Comput. Sci. 7 (2015) 26–36</em>).
+It extracts <strong>Lagrangian Coherent Structures</strong> — the most influential material surfaces
+organising transport and mixing in a time-dependent 2D flow.</p>
+
+<p>Given any velocity field $\mathbf{v}(t, \mathbf{x})$, a spatial domain $D$, and a time
+interval $[t_0, t_F]$, the tool computes three families of LCSs:</p>
+
+<table>
+  <tr><th>Family</th><th>Physical meaning</th><th>Mathematical object</th></tr>
+  <tr>
+    <td><strong>Repelling (hyperbolic)</strong></td>
+    <td>Most repelling material lines — the "spines" of stretching. Act as transport barriers.</td>
+    <td>Shrink lines: integral curves of the minor Cauchy-Green eigenvector $\xi_1$, seeded at local maxima of $\lambda_2$.</td>
+  </tr>
+  <tr>
+    <td><strong>Attracting (hyperbolic)</strong></td>
+    <td>Most attracting material lines — collect passive tracers in finite time.</td>
+    <td>Stretch lines: integral curves of the major eigenvector $\xi_2$, seeded at local minima of $\lambda_1$.</td>
+  </tr>
+  <tr>
+    <td><strong>Elliptic</strong></td>
+    <td>Closed material boundaries of coherent vortices.</td>
+    <td>Outermost closed orbits of the generalised $\eta_\lambda^\pm$ field (null-geodesics of $E_\lambda = \tfrac{1}{2}(C - \lambda^2 I)$), detected by Poincaré sections.</td>
+  </tr>
+</table>
+
+<h2>How this documentation is organised</h2>
+<ul>
+  <li><a href="math.html"><strong>Math Foundations</strong></a> — the formulae behind every computation: the flow map, the Cauchy-Green tensor, the variational characterisation of LCSs.</li>
+  <li><a href="pipeline.html"><strong>Pipeline</strong></a> — the five-stage computation flow, stage by stage, with the exact functions and data formats.</li>
+  <li><a href="functions.html"><strong>Functions</strong></a> — a reference card for every MATLAB function grouped by purpose (grid, strain, hyperbolic, elliptic, diagnostic).</li>
+  <li><a href="plotting.html"><strong>Plotting</strong></a> — a dedicated chapter for all visualisation helpers.</li>
+  <li><a href="demos.html"><strong>Demos</strong></a> — a walk-through of Double Gyre, Bickley Jet, and the Agulhas ocean dataset.</li>
+  <li><a href="howto.html"><strong>How-To Guide</strong></a> — two self-contained templates for applying LCStool to your own velocity field.</li>
+  <li><a href="pitfalls.html"><strong>Pitfalls &amp; Tuning</strong></a> — what goes wrong and how to fix it.</li>
+</ul>
+
+<h2>Quick example — the three-line FTLE</h2>
+<p>If all you want is an FTLE map, the pipeline boils down to:</p>
+<pre><code><span class="com">% 1. Eigen-decompose Cauchy-Green</span>
+[cgV, cgD] = eig_cgStrain(lDerivative, domain, resolution, timespan, <span class="str">'incompressible'</span>, true);
+
+<span class="com">% 2. Compute FTLE from the largest eigenvalue</span>
+ftleField = ftle(cgD(:,2), diff(timespan));
+
+<span class="com">% 3. Plot</span>
+hAx = setup_figure(domain);
+plot_ftle(hAx, domain, resolution, ftleField);</code></pre>
+
+<p>Ridges in the FTLE map pre-visualise the hyperbolic LCSs; vortex-like closed contours
+hint at where to place Poincaré sections for the elliptic analysis.</p>
+
+<h2>Theoretical background</h2>
+<p>The toolbox implements the variational LCS theory developed by Haller and collaborators:</p>
+<ul>
+  <li>G. Haller, <em>Lagrangian Coherent Structures</em>. Annual Review of Fluid Mechanics, 47 (2015) 137–162.</li>
+  <li>G. Haller &amp; F. Beron-Vera, <em>Coherent Lagrangian vortices: the black holes of turbulence</em>. Journal of Fluid Mechanics, 731 (2013) R4.</li>
+  <li>K. Onu, F. Huhn, G. Haller, <em>LCS Tool: a computational platform for Lagrangian coherent structures</em>. J. Computational Science, 7 (2015) 26–36.</li>
+</ul>
+
+<div class="page-nav">
+  <span></span>
+  <a href="math.html" class="next"><span class="label">Next →</span>Math Foundations</a>
+</div>
+
+<footer class="page-foot">
+  Generated for the Serra lab reference notes. Source: <code>Codes/LCStool-master/LCStool-1-0/</code>.
+</footer>
+</main>
+
+</div>
+<script src="assets/nav.js"></script>
+</body>
+</html>

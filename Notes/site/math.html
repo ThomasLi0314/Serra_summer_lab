@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Math Foundations — LCStool Docs</title>
+<link rel="stylesheet" href="assets/style.css">
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['$','$'], ['\\(','\\)']], displayMath: [['$$','$$'], ['\\[','\\]']] },
+    svg: { fontCache: 'global' }
+  };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<div class="layout">
+
+<aside class="sidebar">
+  <h1><a href="index.html">LCStool Docs</a></h1>
+  <span class="tag">Serra Lab · Ref v1.0</span>
+  <nav>
+    <ul>
+      <li><a href="index.html">Home</a></li>
+      <li class="has-sub active open">
+        <a href="math.html">Math Foundations</a>
+        <ul class="submenu">
+          <li><a href="math.html#flow-map">Flow map &amp; deformation gradient</a></li>
+          <li><a href="math.html#cg-tensor">Cauchy-Green tensor</a></li>
+          <li><a href="math.html#ftle">FTLE</a></li>
+          <li><a href="math.html#hyperbolic">Hyperbolic LCS theory</a></li>
+          <li><a href="math.html#elliptic">Elliptic LCS theory</a></li>
+          <li><a href="math.html#lambda-line">λ-lines &amp; null-geodesics</a></li>
+        </ul>
+      </li>
+      <li class="has-sub"><a href="pipeline.html">Pipeline</a>
+        <ul class="submenu">
+          <li><a href="pipeline.html#overview">Overview diagram</a></li>
+          <li><a href="pipeline.html#stage1">Stage 1 — Flow definition</a></li>
+          <li><a href="pipeline.html#stage2">Stage 2 — C &amp; eigen-decomp</a></li>
+          <li><a href="pipeline.html#stage3">Stage 3 — Hyperbolic LCS</a></li>
+          <li><a href="pipeline.html#stage4">Stage 4 — Elliptic LCS</a></li>
+          <li><a href="pipeline.html#stage5">Stage 5 — Plotting</a></li>
+        </ul>
+      </li>
+      <li class="has-sub"><a href="functions.html">Functions</a>
+        <ul class="submenu">
+          <li><a href="functions.html#grid">Grid &amp; flow</a></li>
+          <li><a href="functions.html#cg">Cauchy-Green &amp; FTLE</a></li>
+          <li><a href="functions.html#hyperbolic">Hyperbolic LCS</a></li>
+          <li><a href="functions.html#elliptic">Elliptic LCS</a></li>
+          <li><a href="functions.html#diagnostic">Diagnostics</a></li>
+        </ul>
+      </li>
+      <li class="has-sub"><a href="plotting.html">Plotting</a>
+        <ul class="submenu">
+          <li><a href="plotting.html#setup">setup_figure</a></li>
+          <li><a href="plotting.html#ftle">plot_ftle</a></li>
+          <li><a href="plotting.html#elliptic">plot_elliptic_lcs</a></li>
+          <li><a href="plotting.html#orbit">plot_closed_orbit</a></li>
+          <li><a href="plotting.html#arc">plot_along_arc_length</a></li>
+          <li><a href="plotting.html#discont">plot_orient_discont</a></li>
+          <li><a href="plotting.html#animate">animate_flow</a></li>
+        </ul>
+      </li>
+      <li class="has-sub"><a href="demos.html">Demos</a>
+        <ul class="submenu">
+          <li><a href="demos.html#double-gyre">Double Gyre</a></li>
+          <li><a href="demos.html#bickley-jet">Bickley Jet</a></li>
+          <li><a href="demos.html#ocean">Ocean Dataset</a></li>
+        </ul>
+      </li>
+      <li class="has-sub"><a href="howto.html">How-To Guide</a>
+        <ul class="submenu">
+          <li><a href="howto.html#convention">Input conventions</a></li>
+          <li><a href="howto.html#analytical">Analytical field</a></li>
+          <li><a href="howto.html#gridded">Gridded data</a></li>
+          <li><a href="howto.html#workflow">Recommended workflow</a></li>
+        </ul>
+      </li>
+      <li><a href="pitfalls.html">Pitfalls &amp; Tuning</a></li>
+    </ul>
+  </nav>
+</aside>
+
+<main>
+<header class="page-head">
+  <h1>Math Foundations</h1>
+  <p class="sub">The geometry of finite-time transport: flow maps, deformation, and the variational theory behind LCSs.</p>
+</header>
+
+<!-- ================= FLOW MAP ================= -->
+<h2 id="flow-map">1. Flow map and deformation gradient <span class="sub-tag tag-math">theory</span></h2>
+
+<p>Consider a two-dimensional, possibly time-dependent velocity field
+$\mathbf{v}: D \times [t_0, t_F] \to \mathbb{R}^2$. A fluid particle starting at
+$\mathbf{x}_0$ at time $t_0$ satisfies</p>
+
+<div class="math-block">
+$$ \dot{\mathbf{x}}(t) = \mathbf{v}(t,\mathbf{x}(t)), \qquad \mathbf{x}(t_0) = \mathbf{x}_0. $$
+</div>
+
+<p>The <strong>flow map</strong> $F_{t_0}^{t}: D \to D$ sends each initial position to its image at time $t$:</p>
+
+<div class="math-block">
+$$ F_{t_0}^{t}(\mathbf{x}_0) \;=\; \mathbf{x}(t;\,t_0,\mathbf{x}_0). $$
+</div>
+
+<p>The <strong>deformation gradient</strong> is the Jacobian of the flow map with respect to the initial condition:</p>
+
+<div class="math-block">
+$$ \nabla F_{t_0}^{t}(\mathbf{x}_0) \;=\; \frac{\partial F_{t_0}^{t}}{\partial \mathbf{x}_0}
+\;=\;
+\begin{pmatrix}
+\partial x(t)/\partial x_0 & \partial x(t)/\partial y_0 \\[2pt]
+\partial y(t)/\partial x_0 & \partial y(t)/\partial y_0
+\end{pmatrix}. $$
+</div>
+
+<p>An infinitesimal material segment $d\mathbf{x}_0$ is mapped to
+$d\mathbf{x}(t) = \nabla F \, d\mathbf{x}_0$, so the change of its squared length is</p>
+
+<div class="math-block">
+$$ \|d\mathbf{x}(t)\|^2
+\;=\; d\mathbf{x}_0^{\!\top} \bigl(\nabla F^{\!\top} \nabla F\bigr) d\mathbf{x}_0
+\;=\; d\mathbf{x}_0^{\!\top} \, C(\mathbf{x}_0) \, d\mathbf{x}_0. $$
+</div>
+
+<div class="note"><strong>Code note.</strong> LCStool never explicitly forms $F_{t_0}^t$;
+it computes $\nabla F$ either by finite differences on an <em>auxiliary grid</em>
+(<code>'finiteDifference'</code> mode in
+<a href="functions.html#eig_cgStrain"><code>eig_cgStrain</code></a>)
+or by integrating the <em>equation of variation</em>
+(<code>'equationOfVariation'</code> mode).</div>
+
+<h3>Equation of variation</h3>
+<p>Differentiating the ODE with respect to $\mathbf{x}_0$ gives a matrix ODE for
+$\Phi(t) := \nabla F_{t_0}^{t}$:</p>
+
+<div class="math-block">
+$$ \dot{\Phi}(t) = \nabla \mathbf{v}(t, \mathbf{x}(t))\,\Phi(t), \qquad \Phi(t_0) = I. $$
+</div>
+
+<p>For a planar flow this is a $2\times 2$ system. LCStool packs it into the ODE state as
+$[x,\,y,\,\Phi_{11},\,\Phi_{12},\,\Phi_{21},\,\Phi_{22}]^\top$, yielding six coupled equations.
+This is the <code>useEoV</code> flag controlling whether extra states are carried. Look at the tail end of
+<code>demo/double_gyre/derivative.m</code> for a concrete example.</p>
+
+<!-- ================= C TENSOR ================= -->
+<h2 id="cg-tensor">2. Cauchy-Green strain tensor <span class="sub-tag tag-math">theory</span></h2>
+
+<p>The Cauchy-Green strain tensor is the symmetric, positive-definite matrix</p>
+
+<div class="math-block">
+$$ C_{t_0}^{t}(\mathbf{x}_0) \;=\; \bigl[\nabla F_{t_0}^{t}(\mathbf{x}_0)\bigr]^{\!\top}\!\nabla F_{t_0}^{t}(\mathbf{x}_0)
+\;\in\; \mathbb{R}^{2\times 2}. $$
+</div>
+
+<p>Its spectrum $\{\lambda_1, \lambda_2\}$ with $0 &lt; \lambda_1 \le \lambda_2$ has orthonormal
+eigenvectors $\{\xi_1, \xi_2\}$:</p>
+
+<div class="math-block">
+$$ C \,\xi_i \;=\; \lambda_i \,\xi_i, \qquad \xi_1 \perp \xi_2, \qquad \lambda_1 \lambda_2 = \det C = (\det \nabla F)^2. $$
+</div>
+
+<p>Because of the geometric meaning above, the stretch experienced by a material segment aligned
+with $\xi_i$ over $[t_0,t]$ is exactly $\sqrt{\lambda_i}$:</p>
+
+<div class="math-block">
+$$ \|\nabla F\,\xi_i\| \;=\; \sqrt{\lambda_i}. $$
+</div>
+
+<h3>Incompressible case</h3>
+<p>For an area-preserving flow $\det \nabla F = 1$, so $\lambda_1 \lambda_2 = 1$ everywhere. LCStool's
+<code>'incompressible'</code> option <em>enforces</em> this by setting $\lambda_1 \leftarrow 1/\lambda_2$
+wherever $\lambda_2 > 1$ (and tagging NaN elsewhere).</p>
+
+<h3>Finite-difference computation</h3>
+<p>On the auxiliary grid, $\nabla F$ is estimated using central differences between four
+neighbouring image points:</p>
+
+<div class="math-block">
+$$
+\nabla F \approx
+\begin{pmatrix}
+\dfrac{x(t; x_0{+}\delta) - x(t; x_0{-}\delta)}{2\delta} &
+\dfrac{x(t; y_0{+}\delta) - x(t; y_0{-}\delta)}{2\delta} \\[9pt]
+\dfrac{y(t; x_0{+}\delta) - y(t; x_0{-}\delta)}{2\delta} &
+\dfrac{y(t; y_0{+}\delta) - y(t; y_0{-}\delta)}{2\delta}
+\end{pmatrix}
+$$
+</div>
+
+<p>then $C = \nabla F^\top \nabla F$ is assembled entry-wise in
+<code>compute_cgStrain</code> (internal to <code>eig_cgStrain.m</code>):</p>
+
+<div class="math-block">
+$$
+C_{11} = F_{11}^2 + F_{21}^2,\quad
+C_{12} = F_{11}F_{12} + F_{21}F_{22},\quad
+C_{22} = F_{12}^2 + F_{22}^2.
+$$
+</div>
+
+<!-- ================= FTLE ================= -->
+<h2 id="ftle">3. Finite-Time Lyapunov Exponent (FTLE) <span class="sub-tag tag-math">theory</span></h2>
+
+<p>The FTLE is the logarithmic growth rate of the largest finite-time stretch:</p>
+
+<div class="math-block">
+$$ \Lambda_{t_0}^{t}(\mathbf{x}_0) \;=\; \frac{1}{|\,t - t_0\,|}\; \ln\!\sqrt{\lambda_2(\mathbf{x}_0)}
+\;=\; \frac{1}{2\,|t - t_0|}\; \ln \lambda_2(\mathbf{x}_0). $$
+</div>
+
+<p>This is literally what <a href="functions.html#ftle"><code>ftle.m</code></a> computes:</p>
+
+<pre><code><span class="kw">function</span> ftle_ = ftle(max_eigenvalue, timespan)
+    ftle_ = .5*log(max_eigenvalue)/timespan;</code></pre>
+
+<p>Ridges of $\Lambda_{t_0}^{t}$ are a historically popular (though not rigorous) proxy
+for hyperbolic LCSs. Haller's <em>variational</em> theory below makes the proxy rigorous.</p>
+
+<!-- ================= HYPERBOLIC THEORY ================= -->
+<h2 id="hyperbolic">4. Hyperbolic LCS — variational theory <span class="sub-tag tag-math">theory</span></h2>
+
+<p>Among all smooth material curves $\gamma$ parameterised by $s$, the <strong>repelling LCS</strong>
+is one that locally <em>maximises</em> the average normal repulsion rate over the interval
+$[t_0, t]$. In two dimensions Haller (2011) proved:</p>
+
+<div class="tip">
+<strong>Theorem (repelling LCS).</strong> A smooth curve $\gamma(s)$ is a repelling LCS over
+$[t_0,t]$ if and only if at every $\mathbf{x}_0 \in \gamma$,
+<ol>
+  <li>$\lambda_1(\mathbf{x}_0) \ne \lambda_2(\mathbf{x}_0)$ and $\lambda_2(\mathbf{x}_0) > 1$;</li>
+  <li>$\gamma'(s)$ is parallel to $\xi_1(\mathbf{x}_0)$ at every point;</li>
+  <li>$\langle \xi_2,\,\nabla^2 \lambda_2\,\xi_2\rangle \le 0$  (a curvature / ridge condition on $\lambda_2$).</li>
+</ol>
+</div>
+
+<p>Condition (2) says a repelling LCS is an integral curve of the minor eigenvector field
+$\xi_1$ — LCStool calls these <strong>shrink lines</strong>. Condition (3) says the curve
+must lie on a local ridge of $\lambda_2$; LCStool approximates this by seeding curves at
+<em>local maxima</em> of $\lambda_2$ on the grid
+(see <a href="functions.html#seed_curves"><code>seed_curves_from_lambda_max</code></a>).</p>
+
+<p><strong>Attracting LCSs</strong> come from the same theorem applied to the <em>inverse</em>
+flow map: they are integral curves of the major eigenvector field $\xi_2$, seeded at local
+<em>minima</em> of $\lambda_1$ (equivalently, local maxima of $-\lambda_1$). These are the
+<strong>stretch lines</strong>.</p>
+
+<h3>Why integrate a non-orientable field?</h3>
+<p>Eigenvectors are only defined up to a sign: $\xi_1$ and $-\xi_1$ are both valid.
+Direct numerical integration would flip orientation at random between cells and produce
+spurious "breaks" in the curve. LCStool handles this by tracking the previous direction in
+an ODE-output callback (<code>ode_output</code> in
+<a href="functions.html#integrate_line"><code>integrate_line.m</code></a>) and flipping the
+sign of the new vector whenever the dot product turns negative:</p>
+
+<div class="math-block">
+$$ \mathbf{v}_{\mathrm{new}} \leftarrow \operatorname{sign}(\mathbf{v}_{\mathrm{prev}} \cdot \mathbf{v}_{\mathrm{new}})\,\mathbf{v}_{\mathrm{new}}. $$
+</div>
+
+<p>Grid cells where the orientation change exceeds $\pi/2$ are flagged as
+<em>orientation discontinuities</em> and the interpolant is locally patched (this is what
+the helper <code>is_element_with_orient_discont</code> does).</p>
+
+<!-- ================= ELLIPTIC THEORY ================= -->
+<h2 id="elliptic">5. Elliptic LCS — coherent vortex theory <span class="sub-tag tag-math">theory</span></h2>
+
+<p>Haller and Beron-Vera (2013, JFM 731 R4) showed that coherent material vortex boundaries
+are the outermost closed integral curves $\gamma$ of the <em>generalised Green-Lagrange</em>
+Lorentzian metric</p>
+
+<div class="math-block">
+$$ E_\lambda(\mathbf{x}_0) \;=\; \tfrac{1}{2}\bigl(\,C(\mathbf{x}_0) - \lambda^2 I\,\bigr),
+\qquad \lambda > 0. $$
+</div>
+
+<p>Intuitively, along such a curve every infinitesimal material element is stretched by exactly
+the <em>same</em> factor $\lambda$ — so the curve does not deform tangentially relative to itself.
+Closed curves with $\lambda = 1$ are literally material lines whose length is preserved from
+$t_0$ to $t$; nearby curves with $\lambda \ne 1$ act as uniformly stretching/compressing
+boundaries.</p>
+
+<h3>Variational characterisation</h3>
+<p>Curves along which $E_\lambda$ vanishes tangentially satisfy the <em>null-geodesic</em>
+condition</p>
+
+<div class="math-block">
+$$ \bigl\langle \gamma'(s),\; (C - \lambda^2 I)\,\gamma'(s)\bigr\rangle \;=\; 0. $$
+</div>
+
+<p>Solving for $\gamma'$ in the $(\xi_1,\xi_2)$ eigenbasis (where $C = \operatorname{diag}(\lambda_1,\lambda_2)$) gives the two <strong>η-fields</strong> below.</p>
+
+<!-- ================= LAMBDA LINE ================= -->
+<h2 id="lambda-line">6. λ-lines and the η-vector fields <span class="sub-tag tag-math">theory</span></h2>
+
+<p>Substituting $\gamma'(s) = a\,\xi_1 + b\,\xi_2$ into the null condition and requiring unit
+length yields the two solution branches</p>
+
+<div class="math-block">
+$$ \boxed{\;\;
+\eta_\lambda^\pm(\mathbf{x}_0)
+\;=\;
+\sqrt{\dfrac{\lambda_2 - \lambda^2}{\lambda_2 - \lambda_1}}\;\xi_1(\mathbf{x}_0)
+\;\pm\;
+\sqrt{\dfrac{\lambda^2 - \lambda_1}{\lambda_2 - \lambda_1}}\;\xi_2(\mathbf{x}_0).
+\;\;}$$
+</div>
+
+<p>This is exactly Eq. 3.2 of Haller &amp; Beron-Vera (2013) and is what
+<a href="functions.html#lambda_line"><code>lambda_line.m</code></a> evaluates. Its MATLAB code is a
+line-for-line transcription:</p>
+
+<pre><code>etaPos(:,1) = sqrt((l2 - lambda^2)./(l2 - l1)).*xi1(:,1) + sqrt((lambda^2 - l1)./(l2 - l1)).*xi2(:,1);
+etaPos(:,2) = sqrt((l2 - lambda^2)./(l2 - l1)).*xi1(:,2) + sqrt((lambda^2 - l1)./(l2 - l1)).*xi2(:,2);
+etaNeg(:,1) = sqrt((l2 - lambda^2)./(l2 - l1)).*xi1(:,1) - sqrt((lambda^2 - l1)./(l2 - l1)).*xi2(:,1);
+etaNeg(:,2) = sqrt((l2 - lambda^2)./(l2 - l1)).*xi1(:,2) - sqrt((lambda^2 - l1)./(l2 - l1)).*xi2(:,2);</code></pre>
+
+<div class="note"><strong>Where η is real.</strong> The square roots are real only when
+$\lambda_1 \le \lambda^2 \le \lambda_2$. Outside this band η becomes complex; LCStool
+sets those points to NaN when <code>'forceComplexNaN', true</code> is passed.</div>
+
+<h3>Closed λ-lines = elliptic LCS candidates</h3>
+<p>A <strong>closed orbit</strong> of $\eta_\lambda^\pm$ around a vortex core is, by construction, a
+curve of uniform stretching factor $\lambda$. The <em>outermost</em> such closed orbit (at any $\lambda$)
+is the most coherent material boundary around that vortex.</p>
+
+<h3>The Poincaré-section return map</h3>
+<p>To find closed orbits, LCStool uses a classical Poincaré-section approach. Let $\Sigma$ be a
+short line segment transverse to the vector field near a suspected vortex core. For an initial
+point $\mathbf{p}_0 \in \Sigma$, integrate $\eta_\lambda^\pm$ forward until it returns to $\Sigma$ at a point $\mathbf{p}_1$. The <em>return distance</em> is</p>
+
+<div class="math-block">
+$$ d(\mathbf{p}_0) \;=\; \operatorname{sgn}\bigl((\mathbf{p}_1 - \mathbf{p}_0)\!\cdot\!\hat{\Sigma}\bigr)\;\|\mathbf{p}_1 - \mathbf{p}_0\|. $$
+</div>
+
+<p>A <strong>closed orbit passes through $\mathbf{p}_0$ iff $d(\mathbf{p}_0) = 0$.</strong>
+LCStool discretises $\Sigma$ with <code>numPoints</code> seeds, finds zero-crossings of $d(\cdot)$ by
+linear interpolation (the <code>crossing</code> helper in
+<a href="functions.html#poincare_closed_orbit"><code>poincare_closed_orbit.m</code></a>),
+then refines each to high accuracy with bisection:</p>
+
+<div class="math-block">
+$$ \text{if } d(p_1)\,d(p_3) < 0 \text{ then } p_2 \leftarrow p_3, \;\text{else}\; p_1 \leftarrow p_3,\quad p_3 = \tfrac{1}{2}(p_1+p_2). $$
+</div>
+
+<h3>λ-sweep and the outermost orbit</h3>
+<p>A single $\lambda$ might yield several nested closed orbits. LCStool sweeps $\lambda$ over a
+user-chosen range (<code>lambda = 0.9:0.02:1.1</code> in the ocean demo), finds the outermost
+closed orbit at each, and then <a href="functions.html#elliptic_lcs"><code>elliptic_lcs</code></a>
+picks the $\lambda$ that maximises the enclosed area (via <code>polyarea</code>) — that is the
+declared elliptic LCS for the section.</p>
+
+<!-- ================= SUMMARY TABLE ================= -->
+<h2>7. Cheat-sheet</h2>
+
+<table class="formula-table">
+  <tr><th>Quantity</th><th>Formula</th><th>Function</th></tr>
+  <tr>
+    <td>$\nabla F$</td>
+    <td>Finite diff. on aux. grid, or $\dot\Phi = \nabla \mathbf{v}\,\Phi$</td>
+    <td><code>eig_cgStrain</code></td>
+  </tr>
+  <tr>
+    <td>$C$</td>
+    <td>$\nabla F^{\top}\nabla F$</td>
+    <td><code>compute_cgStrain</code> (internal)</td>
+  </tr>
+  <tr>
+    <td>$\lambda_i, \xi_i$</td>
+    <td>$C\xi_i = \lambda_i \xi_i$</td>
+    <td><code>eig_array</code> (internal)</td>
+  </tr>
+  <tr>
+    <td>FTLE $\Lambda$</td>
+    <td>$\tfrac{1}{2T}\ln\lambda_2$</td>
+    <td><code>ftle</code></td>
+  </tr>
+  <tr>
+    <td>Repelling LCS</td>
+    <td>Integral curve of $\xi_1$, seeded at $\max \lambda_2$</td>
+    <td><code>seed_curves_from_lambda_max(dist, maxLen, cgD(:,2), cgV(:,1:2), …)</code></td>
+  </tr>
+  <tr>
+    <td>Attracting LCS</td>
+    <td>Integral curve of $\xi_2$, seeded at $\min \lambda_1$</td>
+    <td><code>seed_curves_from_lambda_max(dist, maxLen, -cgD(:,1), cgV(:,3:4), …)</code></td>
+  </tr>
+  <tr>
+    <td>$\eta_\lambda^\pm$</td>
+    <td>$\sqrt{\tfrac{\lambda_2-\lambda^2}{\lambda_2-\lambda_1}}\,\xi_1 \pm \sqrt{\tfrac{\lambda^2-\lambda_1}{\lambda_2-\lambda_1}}\,\xi_2$</td>
+    <td><code>lambda_line</code></td>
+  </tr>
+  <tr>
+    <td>Closed orbit</td>
+    <td>Zero of Poincaré return-distance $d$</td>
+    <td><code>poincare_closed_orbit</code></td>
+  </tr>
+  <tr>
+    <td>Elliptic LCS</td>
+    <td>Outermost (largest-area) closed $\eta_\lambda^\pm$-orbit</td>
+    <td><code>elliptic_lcs</code></td>
+  </tr>
+</table>
+
+<div class="page-nav">
+  <a href="index.html" class="prev"><span class="label">← Prev</span>Home</a>
+  <a href="pipeline.html" class="next"><span class="label">Next →</span>Pipeline</a>
+</div>
+
+<footer class="page-foot">
+  References: G. Haller, Annu. Rev. Fluid Mech. 47 (2015) 137–162; Haller &amp; Beron-Vera, JFM 731 (2013) R4.
+</footer>
+</main>
+
+</div>
+<script src="assets/nav.js"></script>
+</body>
+</html>

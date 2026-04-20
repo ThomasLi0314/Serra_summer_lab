@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pipeline — LCStool Docs</title>
+<link rel="stylesheet" href="assets/style.css">
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['$','$'], ['\\(','\\)']], displayMath: [['$$','$$'], ['\\[','\\]']] },
+    svg: { fontCache: 'global' }
+  };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<div class="layout">
+
+<aside class="sidebar">
+  <h1><a href="index.html">LCStool Docs</a></h1>
+  <span class="tag">Serra Lab · Ref v1.0</span>
+  <nav>
+    <ul>
+      <li><a href="index.html">Home</a></li>
+      <li class="has-sub"><a href="math.html">Math Foundations</a>
+        <ul class="submenu">
+          <li><a href="math.html#flow-map">Flow map &amp; deformation gradient</a></li>
+          <li><a href="math.html#cg-tensor">Cauchy-Green tensor</a></li>
+          <li><a href="math.html#ftle">FTLE</a></li>
+          <li><a href="math.html#hyperbolic">Hyperbolic LCS theory</a></li>
+          <li><a href="math.html#elliptic">Elliptic LCS theory</a></li>
+          <li><a href="math.html#lambda-line">λ-lines &amp; null-geodesics</a></li>
+        </ul>
+      </li>
+      <li class="has-sub active open"><a href="pipeline.html">Pipeline</a>
+        <ul class="submenu">
+          <li><a href="pipeline.html#overview">Overview diagram</a></li>
+          <li><a href="pipeline.html#stage1">Stage 1 — Flow definition</a></li>
+          <li><a href="pipeline.html#stage2">Stage 2 — C &amp; eigen-decomp</a></li>
+          <li><a href="pipeline.html#stage3">Stage 3 — Hyperbolic LCS</a></li>
+          <li><a href="pipeline.html#stage4">Stage 4 — Elliptic LCS</a></li>
+          <li><a href="pipeline.html#stage5">Stage 5 — Plotting</a></li>
+        </ul>
+      </li>
+      <li class="has-sub"><a href="functions.html">Functions</a>
+        <ul class="submenu">
+          <li><a href="functions.html#grid">Grid &amp; flow</a></li>
+          <li><a href="functions.html#cg">Cauchy-Green &amp; FTLE</a></li>
+          <li><a href="functions.html#hyperbolic">Hyperbolic LCS</a></li>
+          <li><a href="functions.html#elliptic">Elliptic LCS</a></li>
+          <li><a href="functions.html#diagnostic">Diagnostics</a></li>
+        </ul>
+      </li>
+      <li class="has-sub"><a href="plotting.html">Plotting</a>
+        <ul class="submenu">
+          <li><a href="plotting.html#setup">setup_figure</a></li>
+          <li><a href="plotting.html#ftle">plot_ftle</a></li>
+          <li><a href="plotting.html#elliptic">plot_elliptic_lcs</a></li>
+          <li><a href="plotting.html#orbit">plot_closed_orbit</a></li>
+          <li><a href="plotting.html#arc">plot_along_arc_length</a></li>
+          <li><a href="plotting.html#discont">plot_orient_discont</a></li>
+          <li><a href="plotting.html#animate">animate_flow</a></li>
+        </ul>
+      </li>
+      <li class="has-sub"><a href="demos.html">Demos</a>
+        <ul class="submenu">
+          <li><a href="demos.html#double-gyre">Double Gyre</a></li>
+          <li><a href="demos.html#bickley-jet">Bickley Jet</a></li>
+          <li><a href="demos.html#ocean">Ocean Dataset</a></li>
+        </ul>
+      </li>
+      <li class="has-sub"><a href="howto.html">How-To Guide</a>
+        <ul class="submenu">
+          <li><a href="howto.html#convention">Input conventions</a></li>
+          <li><a href="howto.html#analytical">Analytical field</a></li>
+          <li><a href="howto.html#gridded">Gridded data</a></li>
+          <li><a href="howto.html#workflow">Recommended workflow</a></li>
+        </ul>
+      </li>
+      <li><a href="pitfalls.html">Pitfalls &amp; Tuning</a></li>
+    </ul>
+  </nav>
+</aside>
+
+<main>
+<header class="page-head">
+  <h1>Pipeline</h1>
+  <p class="sub">The five stages of an LCS computation, end to end.</p>
+</header>
+
+<!-- ================= OVERVIEW ================= -->
+<h2 id="overview">Overview diagram</h2>
+
+<p>Every demo follows the same five stages. The driver script only changes parameters —
+the computational skeleton is identical.</p>
+
+<div class="pipeline-diagram">
+┌────────────────────────────────────┐
+│ 1. FLOW DEFINITION                 │
+│    domain, timespan, resolution    │
+│    derivative = @(t,x,eov) …       │
+└──────────────┬─────────────────────┘
+               │
+┌──────────────▼─────────────────────┐
+│ 2. CAUCHY-GREEN & SPECTRUM         │
+│    eig_cgStrain(lDeriv, domain,    │
+│                 resolution, tspan) │
+│    →  cgV (N×4), cgD (N×2)         │
+└────┬───────────────────────┬───────┘
+     │                       │
+┌────▼──────────────┐   ┌────▼────────────────────┐
+│ 3. HYPERBOLIC LCS │   │ 4. ELLIPTIC LCS          │
+│                   │   │                          │
+│ seed_curves_from_ │   │ poincare_closed_orbit_   │
+│      lambda_max   │   │      range               │
+│   (shrink line)   │   │   (λ sweep + sections)   │
+│                   │   │                          │
+│ seed_curves_from_ │   │ elliptic_lcs             │
+│      lambda_max   │   │   (pick outermost area)  │
+│   (stretch line)  │   │                          │
+│                   │   │ remove_strain_in_elliptic│
+│                   │   │   (trim hyperbolic curves│
+│                   │   │    inside vortices)      │
+└─────────┬─────────┘   └────────────┬─────────────┘
+          │                          │
+          └────────────┬─────────────┘
+                       │
+┌──────────────────────▼─────────────┐
+│ 5. PLOT / ANALYSE                  │
+│    setup_figure, plot_ftle,        │
+│    plot_elliptic_lcs, plot …       │
+└────────────────────────────────────┘
+</div>
+
+<!-- ================= STAGE 1 ================= -->
+<h2 id="stage1">Stage 1 — Flow definition</h2>
+
+<p>You describe a flow to LCStool with four things:</p>
+
+<table>
+  <tr><th>Name</th><th>Type</th><th>Meaning</th></tr>
+  <tr><td><code>domain</code></td><td>$2\times 2$ double</td><td><code>[xMin,xMax;&nbsp;yMin,yMax]</code></td></tr>
+  <tr><td><code>timespan</code></td><td>$1\times 2$ double</td><td><code>[t0, tF]</code></td></tr>
+  <tr><td><code>resolution</code></td><td>$1\times 2$ integer</td><td><code>[Nx, Ny]</code></td></tr>
+  <tr><td><code>lDerivative</code></td><td>function handle</td><td>RHS of $\dot{\mathbf{x}} = \mathbf{v}(t,\mathbf{x})$</td></tr>
+</table>
+
+<p>The derivative must follow a strict column-vector convention
+(explained in <a href="howto.html#convention">How-To Guide &rarr; conventions</a>):</p>
+
+<div class="math-block">
+$$
+\mathbf{x}_{\text{in}} = [x_1, y_1, x_2, y_2, \ldots, x_N, y_N]^\top
+\ \mapsto\
+\mathbf{v}_{\text{out}} = [u_1, v_1, u_2, v_2, \ldots, u_N, v_N]^\top.
+$$
+</div>
+
+<p><em>Why column-stacked?</em> Because <code>ode45</code> accepts only a single state vector, and
+LCStool integrates many particles simultaneously in a single coupled ODE call (see
+<a href="functions.html#integrate_flow"><code>integrate_flow</code></a>'s
+<code>coupledIntegration</code> mode).</p>
+
+<p>A minimal wrapper for a flow with parameters <code>p1, p2</code>:</p>
+
+<pre><code>lDerivative = @(t, x, ~) derivative(t, x, false, p1, p2);</code></pre>
+
+<p>The trailing <code>~</code> in the handle is the <code>useEoV</code> slot (equation of variation).
+Always pass <code>false</code> unless you explicitly want the EoV machinery.</p>
+
+<!-- ================= STAGE 2 ================= -->
+<h2 id="stage2">Stage 2 — Cauchy-Green &amp; eigen-decomposition</h2>
+
+<p>This single call does the heavy lifting:</p>
+
+<pre><code>[cgV, cgD] = eig_cgStrain(lDerivative, domain, resolution, timespan, ...
+                          <span class="str">'incompressible'</span>, incompressible, ...
+                          <span class="str">'odeSolverOptions'</span>, cgStrainOdeSolverOptions);</code></pre>
+
+<h3>What happens inside</h3>
+<ol>
+  <li><code>initialize_ic_grid</code> builds the main grid — a flattened <code>Nx·Ny × 2</code> list
+      of initial conditions.</li>
+  <li>An <em>auxiliary grid</em> is built around each main grid point: four extra seeds at
+      $(\pm\delta, 0)$ and $(0, \pm\delta)$ from every main point, with
+      $\delta = \text{auxGridRelDelta} \cdot \Delta x$ (default $10^{-2}$).</li>
+  <li>All these seeds are advected through $[t_0, t_F]$ with <code>ode45</code>, coupled into
+      a single ODE state for speed. Each "particle" is just two coupled equations, so the
+      full state has length $2 N$.</li>
+  <li>The final positions give $\nabla F$ via central differences
+      (see <a href="math.html#cg-tensor">Math §2</a>).</li>
+  <li>From $\nabla F$, the three independent entries of $C = \nabla F^\top \nabla F$ are
+      assembled and diagonalised at every grid point.</li>
+  <li>If <code>'incompressible', true</code> is set, $\lambda_1 \gets 1/\lambda_2$ everywhere
+      that $\lambda_2 > 1$; other points become NaN.</li>
+</ol>
+
+<h3>Data layout of the output</h3>
+<table>
+  <tr><th>Variable</th><th>Shape</th><th>Content</th></tr>
+  <tr><td><code>cgD</code></td><td>$N \times 2$</td><td>$[\lambda_1,\lambda_2]$ at every main-grid point ($\lambda_1 \le \lambda_2$)</td></tr>
+  <tr><td><code>cgV</code></td><td>$N \times 4$</td><td>$[\xi_{1x}, \xi_{1y}, \xi_{2x}, \xi_{2y}]$ packed column-wise</td></tr>
+</table>
+
+<p>Indexing convention: row-$k$ of both arrays corresponds to the $k$-th row of the flattened
+<code>meshgrid</code> (y changes fastest; <code>reshape(…, fliplr(resolution))</code> recovers
+the 2-D layout).</p>
+
+<!-- ================= STAGE 3 ================= -->
+<h2 id="stage3">Stage 3 — Hyperbolic LCS (shrink &amp; stretch lines)</h2>
+
+<p>Two calls to the same function, differing only in which eigenvalue/eigenvector pair is
+supplied:</p>
+
+<pre><code><span class="com">% Repelling (shrink) lines — follow ξ1, seed at maxima of λ2</span>
+shrinkLine = seed_curves_from_lambda_max( ...
+    shrinkLineLocalMaxDistance, shrinkLineMaxLength, ...
+    cgD(:,2), cgV(:,1:2), domain, resolution, ...
+    <span class="str">'odeSolverOptions'</span>, shrinkLineOdeSolverOptions);
+
+<span class="com">% Attracting (stretch) lines — follow ξ2, seed at minima of λ1</span>
+stretchLine = seed_curves_from_lambda_max( ...
+    stretchLineLocalMaxDistance, stretchLineMaxLength, ...
+    -cgD(:,1), cgV(:,3:4), domain, resolution, ...
+    <span class="str">'odeSolverOptions'</span>, stretchLineOdeSolverOptions);</code></pre>
+
+<p>Note the sign flip on <code>cgD(:,1)</code>: the function always finds local <em>maxima</em>
+of its input, so to get minima of $\lambda_1$ you pass $-\lambda_1$.</p>
+
+<h3>Algorithm walk-through (per seed)</h3>
+<ol>
+  <li>Find all local maxima of the input scalar with a distance threshold (circular-mask
+      neighbourhood). Sort descending.</li>
+  <li>Take the largest unused maximum as a seed.</li>
+  <li>Integrate the eigenvector field forward with <code>integrate_line</code> (sign-flip logic
+      keeps orientation continuous) until:
+      <ul>
+        <li>arc length exceeds <code>curveMaxLength</code>, <em>or</em></li>
+        <li>the trajectory leaves <code>domain</code>, <em>or</em></li>
+        <li>it hits NaN (e.g., a point where eigenvectors are ill-defined).</li>
+      </ul></li>
+  <li>Integrate backward from the same seed in the same way.</li>
+  <li>Concatenate the two halves, mark the grid cells they cross as "used" (circular mask)
+      so subsequent seeds are spaced at least <code>distance</code> apart.</li>
+  <li>Repeat from step 2 until no unused maxima remain or <code>nMaxCurves</code> curves are produced.</li>
+</ol>
+
+<div class="note"><strong>Why the distance threshold matters.</strong>
+Without it, every local maximum would spawn a curve and they would overlap into an indecipherable
+mess. A typical setting is <code>2·deltaX</code> for shrink lines and
+<code>10·deltaX</code> for stretch lines — stretch lines can share seeds more readily.</div>
+
+<h3>Post-processing: remove interior strainlines</h3>
+<p>If elliptic LCSs have been computed, strainlines that lie inside a vortex boundary are
+removed by <a href="functions.html#remove_strain_in_elliptic"><code>remove_strain_in_elliptic</code></a>.
+This makes the visualisation cleaner (the vortex interior is not a hyperbolic region).</p>
+
+<!-- ================= STAGE 4 ================= -->
+<h2 id="stage4">Stage 4 — Elliptic LCS (λ-lines &amp; Poincaré sections)</h2>
+
+<p>Three layered function calls build this:</p>
+
+<pre><code>[clPos, clNeg] = poincare_closed_orbit_range( ...
+    domain, resolution, cgV, cgD, lambda, poincareSection, ...
+    <span class="str">'forceEtaComplexNaN'</span>, true, ...
+    <span class="str">'odeSolverOptions'</span>, lambdaLineOdeSolverOptions);
+
+ellipticLcs = elliptic_lcs(clPos);
+ellipticLcs = [ellipticLcs, elliptic_lcs(clNeg)];</code></pre>
+
+<h3>Nesting structure</h3>
+<div class="pipeline-diagram">
+poincare_closed_orbit_range  (loops over λ values)
+  └─ lambda_line             (build η+, η- for this λ)
+  └─ poincare_closed_orbit_multi  (loops over Poincaré sections)
+       └─ poincare_closed_orbit   (one section, one η-field)
+            └─ integrate_line     (single orbit integration)
+</div>
+
+<h3>Per-section logic inside <code>poincare_closed_orbit</code></h3>
+<ol>
+  <li>Seed <code>numPoints</code> particles uniformly along the section.</li>
+  <li>Integrate each with <code>integrate_line</code>; stop when the trajectory returns to
+      the section (event function <code>ode_events_poincare</code>).</li>
+  <li>Rotate into a frame where the section lies on the x-axis; the y-coordinate of each
+      return point is the <em>return distance</em> $d$.</li>
+  <li>Find zero-crossings of $d(s)$ vs. parametric coordinate $s$ along the section.</li>
+  <li>For each zero-crossing, run a <strong>bisection refinement</strong> (<code>nBisection</code>
+      iterations) on the two neighbouring seeds to locate the root precisely.</li>
+  <li>Discard roots whose neighbour distances exceed <code>dThresh × sectionLength</code>
+      (spurious, non-smooth zero-crossings).</li>
+  <li>Integrate each surviving root as a closed orbit; sort innermost → outermost by
+      distance from the section's start.</li>
+</ol>
+
+<h3>The λ sweep</h3>
+<p>A single $\lambda$ often yields several nested closed orbits. The outer loop
+<code>poincare_closed_orbit_range</code> sweeps a range like
+<code>lambda = 0.9:0.02:1.1</code>; each $(\lambda, \Sigma)$ pair produces an innermost + outermost
+orbit (or NaN).</p>
+
+<p>Finally, <code>elliptic_lcs</code> picks, <em>per Poincaré section</em>, the outermost orbit with
+the largest enclosed area across the whole λ-sweep. That is the declared elliptic LCS.</p>
+
+<!-- ================= STAGE 5 ================= -->
+<h2 id="stage5">Stage 5 — Plotting &amp; analysis</h2>
+
+<p>All plotting helpers follow a common idiom:</p>
+<ol>
+  <li>Call <code>setup_figure(domain)</code> to get an axes with equal aspect ratio and the correct limits.</li>
+  <li>Call the specific plotter: <code>plot_ftle</code>, <code>plot_elliptic_lcs</code>, etc.</li>
+  <li>Customise handles returned by the plotters (e.g., set colour or linewidth).</li>
+</ol>
+
+<p>The canonical LCS figure in every demo is produced by:</p>
+
+<pre><code>hAx = setup_figure(domain);
+title(hAx, <span class="str">'Repelling and elliptic LCSs'</span>);
+
+<span class="com">% Elliptic in green, plotted first so it sits on top via uistack later</span>
+hEll = plot_elliptic_lcs(hAx, ellipticLcs);
+set(hEll, <span class="str">'color'</span>, [0 .6 0], <span class="str">'linewidth'</span>, 2);
+
+<span class="com">% Repelling in red</span>
+hRep = cellfun(@(p) plot(hAx, p(:,1), p(:,2)), shrinkLine, <span class="str">'UniformOutput'</span>, false);
+hRep = [hRep{:}];
+set(hRep, <span class="str">'color'</span>, <span class="str">'r'</span>);
+
+uistack(hEll, <span class="str">'top'</span>);</code></pre>
+
+<p>See the dedicated <a href="plotting.html">Plotting chapter</a> for each helper's arguments.</p>
+
+<div class="page-nav">
+  <a href="math.html" class="prev"><span class="label">← Prev</span>Math Foundations</a>
+  <a href="functions.html" class="next"><span class="label">Next →</span>Functions</a>
+</div>
+
+<footer class="page-foot">
+  Generated for the Serra lab reference notes.
+</footer>
+</main>
+
+</div>
+<script src="assets/nav.js"></script>
+</body>
+</html>

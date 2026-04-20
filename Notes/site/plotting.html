@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plotting — LCStool Docs</title>
+<link rel="stylesheet" href="assets/style.css">
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['$','$'], ['\\(','\\)']], displayMath: [['$$','$$'], ['\\[','\\]']] },
+    svg: { fontCache: 'global' }
+  };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<div class="layout">
+
+<aside class="sidebar">
+  <h1><a href="index.html">LCStool Docs</a></h1>
+  <span class="tag">Serra Lab · Ref v1.0</span>
+  <nav>
+    <ul>
+      <li><a href="index.html">Home</a></li>
+      <li class="has-sub"><a href="math.html">Math Foundations</a>
+        <ul class="submenu">
+          <li><a href="math.html#flow-map">Flow map &amp; deformation gradient</a></li>
+          <li><a href="math.html#cg-tensor">Cauchy-Green tensor</a></li>
+          <li><a href="math.html#ftle">FTLE</a></li>
+          <li><a href="math.html#hyperbolic">Hyperbolic LCS theory</a></li>
+          <li><a href="math.html#elliptic">Elliptic LCS theory</a></li>
+          <li><a href="math.html#lambda-line">λ-lines &amp; null-geodesics</a></li>
+        </ul>
+      </li>
+      <li class="has-sub"><a href="pipeline.html">Pipeline</a>
+        <ul class="submenu">
+          <li><a href="pipeline.html#overview">Overview diagram</a></li>
+          <li><a href="pipeline.html#stage1">Stage 1 — Flow definition</a></li>
+          <li><a href="pipeline.html#stage2">Stage 2 — C &amp; eigen-decomp</a></li>
+          <li><a href="pipeline.html#stage3">Stage 3 — Hyperbolic LCS</a></li>
+          <li><a href="pipeline.html#stage4">Stage 4 — Elliptic LCS</a></li>
+          <li><a href="pipeline.html#stage5">Stage 5 — Plotting</a></li>
+        </ul>
+      </li>
+      <li class="has-sub"><a href="functions.html">Functions</a>
+        <ul class="submenu">
+          <li><a href="functions.html#grid">Grid &amp; flow</a></li>
+          <li><a href="functions.html#cg">Cauchy-Green &amp; FTLE</a></li>
+          <li><a href="functions.html#hyperbolic">Hyperbolic LCS</a></li>
+          <li><a href="functions.html#elliptic">Elliptic LCS</a></li>
+          <li><a href="functions.html#diagnostic">Diagnostics</a></li>
+        </ul>
+      </li>
+      <li class="has-sub active open"><a href="plotting.html">Plotting</a>
+        <ul class="submenu">
+          <li><a href="plotting.html#setup">setup_figure</a></li>
+          <li><a href="plotting.html#ftle">plot_ftle</a></li>
+          <li><a href="plotting.html#elliptic">plot_elliptic_lcs</a></li>
+          <li><a href="plotting.html#orbit">plot_closed_orbit</a></li>
+          <li><a href="plotting.html#arc">plot_along_arc_length</a></li>
+          <li><a href="plotting.html#discont">plot_orient_discont</a></li>
+          <li><a href="plotting.html#animate">animate_flow</a></li>
+        </ul>
+      </li>
+      <li class="has-sub"><a href="demos.html">Demos</a>
+        <ul class="submenu">
+          <li><a href="demos.html#double-gyre">Double Gyre</a></li>
+          <li><a href="demos.html#bickley-jet">Bickley Jet</a></li>
+          <li><a href="demos.html#ocean">Ocean Dataset</a></li>
+        </ul>
+      </li>
+      <li class="has-sub"><a href="howto.html">How-To Guide</a>
+        <ul class="submenu">
+          <li><a href="howto.html#convention">Input conventions</a></li>
+          <li><a href="howto.html#analytical">Analytical field</a></li>
+          <li><a href="howto.html#gridded">Gridded data</a></li>
+          <li><a href="howto.html#workflow">Recommended workflow</a></li>
+        </ul>
+      </li>
+      <li><a href="pitfalls.html">Pitfalls &amp; Tuning</a></li>
+    </ul>
+  </nav>
+</aside>
+
+<main>
+<header class="page-head">
+  <h1>Plotting</h1>
+  <p class="sub">Every visualisation helper in LCStool — signatures, usage patterns, and colouring conventions.</p>
+</header>
+
+<p>All plotting helpers are thin wrappers over MATLAB primitives (<code>plot</code>,
+<code>imagesc</code>, <code>quiver</code>, <code>pcolor</code>). They exist only to (a) honour the
+correct axis limits / aspect ratio, (b) reshape flattened grid arrays back to 2-D, and (c)
+return handles that demos customise.</p>
+
+<!-- ============ SETUP ============ -->
+<h2 id="setup">setup_figure</h2>
+
+<div class="fn-card">
+  <h4>setup_figure <span class="sub-tag tag-plot">plotting</span></h4>
+  <div class="role">Create an axes with equal aspect ratio and domain-aligned limits.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>hAxes = setup_figure(flowDomain)</code></dd>
+    <dt>Effect</dt>
+    <dd>
+      • <code>DataAspectRatio = [1 1 1]</code> — physical aspect is preserved;<br>
+      • <code>XLim = flowDomain(1,:)</code>, <code>YLim = flowDomain(2,:)</code>;<br>
+      • <code>XGrid, YGrid</code> on, <code>Box</code> on, <code>NextPlot = 'add'</code>;<br>
+      • xlabel/ylabel set to "x" / "y".
+    </dd>
+    <dt>Use</dt>
+    <dd>Always call this <em>before</em> any of the <code>plot_*</code> helpers. Every demo opens its figure this way.</dd>
+  </dl>
+</div>
+
+<!-- ============ FTLE ============ -->
+<h2 id="ftle">plot_ftle</h2>
+
+<div class="fn-card">
+  <h4>plot_ftle <span class="sub-tag tag-plot">plotting</span></h4>
+  <div class="role">Draw an FTLE field as a colour image over the domain.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>[hFtle, hColorbar] = plot_ftle(hAxes, domain, resolution, ftle)</code></dd>
+    <dt>Internals</dt>
+    <dd>Reshapes <code>ftle</code> to <code>fliplr(resolution)</code>, calls <code>imagesc(domain(1,:), domain(2,:), ftle)</code>, and attaches a colorbar.</dd>
+    <dt>Common tweaks</dt>
+    <dd>
+      <pre><code><span class="com">% Clip colour range</span>
+set(hAxes, <span class="str">'clim'</span>, [0, 0.5]);
+
+<span class="com">% Highlight NaN points (where C was not PD)</span>
+ftleField(isnan(ftleField)) = max(ftleField(:));
+plot_ftle(hAx, domain, resolution, ftleField);</code></pre>
+    </dd>
+    <dt>Math</dt>
+    <dd>Plots the field computed by <code>ftle</code>: $\Lambda = \tfrac{1}{2T}\ln\lambda_2$.</dd>
+  </dl>
+</div>
+
+<!-- ============ ELLIPTIC LCS ============ -->
+<h2 id="elliptic">plot_elliptic_lcs</h2>
+
+<div class="fn-card">
+  <h4>plot_elliptic_lcs <span class="sub-tag tag-plot">plotting</span></h4>
+  <div class="role">Draw the final elliptic LCSs returned by <code>elliptic_lcs</code>.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>h = plot_elliptic_lcs(hAxes, ellipticLcs)</code></dd>
+    <dt>Input</dt>
+    <dd><code>ellipticLcs</code> is a cell array where each cell is an $M\times 2$ closed curve (the outermost-area orbit for one Poincaré section).</dd>
+    <dt>Output</dt>
+    <dd><code>h</code> — array of line handles, one per section. Customise colour / linewidth after the call.</dd>
+    <dt>Typical usage</dt>
+    <dd>
+      <pre><code>hEll = plot_elliptic_lcs(hAx, ellipticLcs);
+set(hEll, <span class="str">'color'</span>, [0 .6 0], <span class="str">'linewidth'</span>, 2);
+<span class="com">% Keep elliptic boundaries on top of strain lines</span>
+uistack(hEll, <span class="str">'top'</span>);</code></pre>
+    </dd>
+  </dl>
+</div>
+
+<!-- ============ PLOT CLOSED ORBIT ============ -->
+<h2 id="orbit">plot_closed_orbit</h2>
+
+<div class="fn-card">
+  <h4>plot_closed_orbit <span class="sub-tag tag-plot">plotting</span></h4>
+  <div class="role">Plot <em>all</em> candidate closed orbits at every λ and every section — useful for diagnosis.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>h = plot_closed_orbit(hAxes, closedOrbit)</code></dd>
+    <dt>Input</dt>
+    <dd><code>closedOrbit</code> is the nested cell array returned by <code>poincare_closed_orbit_range</code>: size <code>[nLambda, nPoincareSection]</code>, each cell itself a list of orbits for that $(\lambda, \Sigma)$ pair.</dd>
+    <dt>Use case</dt>
+    <dd>Sanity-check: if many closed orbits appear for a section, the vortex is well-captured. Few or none means either the Poincaré section is misplaced or $\lambda$-sweep is off.</dd>
+  </dl>
+</div>
+
+<!-- ============ PLOT ALONG ARC LENGTH ============ -->
+<h2 id="arc">plot_along_arc_length</h2>
+
+<div class="fn-card">
+  <h4>plot_along_arc_length <span class="sub-tag tag-plot">plotting</span></h4>
+  <div class="role">Plot a scalar along a curve, parameterised by cumulative arc length.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>hPlot = plot_along_arc_length(hAxes, position, value)</code></dd>
+    <dt>Formula</dt>
+    <dd>
+      $$ s(k) = \sum_{j=1}^{k-1} \sqrt{(x_{j+1}-x_j)^2 + (y_{j+1}-y_j)^2},\quad s(1)=0. $$
+      then plots <code>value</code> against <code>s</code>.
+    </dd>
+    <dt>Example use</dt>
+    <dd>Plot the eigenvalue $\lambda_2$ sampled along a shrink line to visualise hyperbolicity strength across the curve.</dd>
+  </dl>
+</div>
+
+<!-- ============ PLOT ORIENT DISCONT ============ -->
+<h2 id="discont">plot_orient_discont</h2>
+
+<div class="fn-card">
+  <h4>plot_orient_discont <span class="sub-tag tag-plot">plotting</span></h4>
+  <div class="role">Visualise where the eigenvector field has near-π orientation jumps between neighbours.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>hAxes = plot_orient_discont(eigenvector, domain, resolution)</code> or <code>plot_orient_discont(…, angleTol)</code></dd>
+    <dt>What it does</dt>
+    <dd>
+      (a) draws the eigenvector field as a <code>quiver</code> plot;<br>
+      (b) overlays red markers at cells where the angle between neighbouring eigenvectors exceeds $\pi - \text{angleTol}$ in either $x$- or $y$-direction.
+    </dd>
+    <dt>Math</dt>
+    <dd>Uses $\theta = \arccos(\mathbf{v}_i \cdot \mathbf{v}_{i+1})$ with $\mathbf{v}_i$ unit-normalised. Cells with $\theta > \pi - \text{angleTol}$ are the suspicious ones.</dd>
+  </dl>
+</div>
+
+<!-- ============ ANIMATE FLOW ============ -->
+<h2 id="animate">animate_flow</h2>
+
+<div class="fn-card">
+  <h4>animate_flow <span class="sub-tag tag-plot">plotting</span></h4>
+  <div class="role">Show (or record) a particle-cloud animation of the flow — the fastest sanity check you can run.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>flow = animate_flow(flow, animationTime, framerate, animationFilename)</code></dd>
+    <dt>Behaviour</dt>
+    <dd>
+      If <code>flow.solution</code> doesn't exist, first runs <code>integrate_flow</code> to build it; then steps through <code>framerate · animationTime + 1</code> evenly spaced times, evaluating the saved ODE solution with <code>deval</code> at each. If <code>animationFilename</code> is provided, writes frames to a <code>VideoWriter</code> (MP4).
+    </dd>
+    <dt>Example</dt>
+    <dd>
+      <pre><code>flow.derivative  = @(t,x,eov) derivative(t,x,eov, epsilon, amplitude, omega);
+flow.domain      = [0 2; 0 1];
+flow.timespan    = [0 20];
+flow.resolution  = [20 10];
+flow = animate_flow(flow);      <span class="com">% live preview</span>
+flow = animate_flow(flow, 10, 20, <span class="str">'dg.mp4'</span>); <span class="com">% record</span></code></pre>
+    </dd>
+    <dt>Recommended first step</dt>
+    <dd>Before computing LCSs, use this to visually confirm your <code>derivative</code> is correct and the particle cloud moves as expected.</dd>
+  </dl>
+</div>
+
+<h2>Colour convention</h2>
+<p>All three demos use the same convention, which I recommend adopting:</p>
+<table>
+  <tr><th>Curve type</th><th>Colour</th><th>Why</th></tr>
+  <tr><td>Repelling LCS (shrink line)</td><td><span style="color:#c00; font-weight:bold">red</span></td><td>Hazard / stretching direction</td></tr>
+  <tr><td>Attracting LCS (stretch line)</td><td><span style="color:#1a4; font-weight:bold">blue</span></td><td>Collects passive tracers</td></tr>
+  <tr><td>Elliptic LCS</td><td><span style="color:#063; font-weight:bold">green</span> <code>[0 .6 0]</code></td><td>Vortex boundary / contained region</td></tr>
+</table>
+
+<div class="page-nav">
+  <a href="functions.html" class="prev"><span class="label">← Prev</span>Functions</a>
+  <a href="demos.html" class="next"><span class="label">Next →</span>Demos</a>
+</div>
+
+<footer class="page-foot">
+  Generated for the Serra lab reference notes.
+</footer>
+</main>
+
+</div>
+<script src="assets/nav.js"></script>
+</body>
+</html>

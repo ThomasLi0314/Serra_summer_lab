@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Functions Reference — LCStool Docs</title>
+<link rel="stylesheet" href="assets/style.css">
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['$','$'], ['\\(','\\)']], displayMath: [['$$','$$'], ['\\[','\\]']] },
+    svg: { fontCache: 'global' }
+  };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+<div class="layout">
+
+<aside class="sidebar">
+  <h1><a href="index.html">LCStool Docs</a></h1>
+  <span class="tag">Serra Lab · Ref v1.0</span>
+  <nav>
+    <ul>
+      <li><a href="index.html">Home</a></li>
+      <li class="has-sub"><a href="math.html">Math Foundations</a>
+        <ul class="submenu">
+          <li><a href="math.html#flow-map">Flow map &amp; deformation gradient</a></li>
+          <li><a href="math.html#cg-tensor">Cauchy-Green tensor</a></li>
+          <li><a href="math.html#ftle">FTLE</a></li>
+          <li><a href="math.html#hyperbolic">Hyperbolic LCS theory</a></li>
+          <li><a href="math.html#elliptic">Elliptic LCS theory</a></li>
+          <li><a href="math.html#lambda-line">λ-lines &amp; null-geodesics</a></li>
+        </ul>
+      </li>
+      <li class="has-sub"><a href="pipeline.html">Pipeline</a>
+        <ul class="submenu">
+          <li><a href="pipeline.html#overview">Overview diagram</a></li>
+          <li><a href="pipeline.html#stage1">Stage 1 — Flow definition</a></li>
+          <li><a href="pipeline.html#stage2">Stage 2 — C &amp; eigen-decomp</a></li>
+          <li><a href="pipeline.html#stage3">Stage 3 — Hyperbolic LCS</a></li>
+          <li><a href="pipeline.html#stage4">Stage 4 — Elliptic LCS</a></li>
+          <li><a href="pipeline.html#stage5">Stage 5 — Plotting</a></li>
+        </ul>
+      </li>
+      <li class="has-sub active open"><a href="functions.html">Functions</a>
+        <ul class="submenu">
+          <li><a href="functions.html#grid">Grid &amp; flow</a></li>
+          <li><a href="functions.html#cg">Cauchy-Green &amp; FTLE</a></li>
+          <li><a href="functions.html#hyperbolic">Hyperbolic LCS</a></li>
+          <li><a href="functions.html#elliptic">Elliptic LCS</a></li>
+          <li><a href="functions.html#diagnostic">Diagnostics</a></li>
+        </ul>
+      </li>
+      <li class="has-sub"><a href="plotting.html">Plotting</a>
+        <ul class="submenu">
+          <li><a href="plotting.html#setup">setup_figure</a></li>
+          <li><a href="plotting.html#ftle">plot_ftle</a></li>
+          <li><a href="plotting.html#elliptic">plot_elliptic_lcs</a></li>
+          <li><a href="plotting.html#orbit">plot_closed_orbit</a></li>
+          <li><a href="plotting.html#arc">plot_along_arc_length</a></li>
+          <li><a href="plotting.html#discont">plot_orient_discont</a></li>
+          <li><a href="plotting.html#animate">animate_flow</a></li>
+        </ul>
+      </li>
+      <li class="has-sub"><a href="demos.html">Demos</a>
+        <ul class="submenu">
+          <li><a href="demos.html#double-gyre">Double Gyre</a></li>
+          <li><a href="demos.html#bickley-jet">Bickley Jet</a></li>
+          <li><a href="demos.html#ocean">Ocean Dataset</a></li>
+        </ul>
+      </li>
+      <li class="has-sub"><a href="howto.html">How-To Guide</a>
+        <ul class="submenu">
+          <li><a href="howto.html#convention">Input conventions</a></li>
+          <li><a href="howto.html#analytical">Analytical field</a></li>
+          <li><a href="howto.html#gridded">Gridded data</a></li>
+          <li><a href="howto.html#workflow">Recommended workflow</a></li>
+        </ul>
+      </li>
+      <li><a href="pitfalls.html">Pitfalls &amp; Tuning</a></li>
+    </ul>
+  </nav>
+</aside>
+
+<main>
+<header class="page-head">
+  <h1>Functions Reference</h1>
+  <p class="sub">Every LCStool function, grouped by role. Each card includes the signature, key options, the underlying formula, and where it sits in the pipeline.</p>
+</header>
+
+<!-- ============ GRID / FLOW ============ -->
+<h2 id="grid">1. Grid &amp; flow integration</h2>
+
+<div class="fn-card" id="initialize_ic_grid">
+  <h4>initialize_ic_grid <span class="sub-tag tag-util">util</span></h4>
+  <div class="role">Build a Cartesian grid of initial conditions.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>position = initialize_ic_grid(resolution, domain)</code></dd>
+    <dt>Math</dt>
+    <dd>Produces the tensor product grid
+      $\{(x_i, y_j)\}$ with
+      $x_i = x_{\min} + \tfrac{i-1}{N_x-1}(x_{\max}-x_{\min})$,
+      $y_j = y_{\min} + \tfrac{j-1}{N_y-1}(y_{\max}-y_{\min})$,
+      flattened meshgrid-style.</dd>
+    <dt>Output</dt>
+    <dd><code>position</code> — $N \times 2$ with $N = N_x N_y$, one $(x,y)$ per row.</dd>
+    <dt>Used by</dt>
+    <dd>Nearly every downstream routine that needs uniform seeds.</dd>
+  </dl>
+</div>
+
+<div class="fn-card" id="equal_resolution">
+  <h4>equal_resolution <span class="sub-tag tag-util">util</span></h4>
+  <div class="role">Pick $N_y$ such that $\Delta x \approx \Delta y$.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>[resolutionY, deltaX] = equal_resolution(domain, resolutionX)</code></dd>
+    <dt>Math</dt>
+    <dd>$\Delta x = \tfrac{x_{\max}-x_{\min}}{N_x-1}$, then $N_y = \text{round}\!\left(\tfrac{y_{\max}-y_{\min}}{\Delta x}\right) + 1$.</dd>
+    <dt>Why</dt>
+    <dd>The auxiliary-grid Cauchy-Green computation assumes isotropic cells; unequal spacing triggers a warning.</dd>
+  </dl>
+</div>
+
+<div class="fn-card" id="integrate_flow">
+  <h4>integrate_flow <span class="sub-tag tag-util">util</span></h4>
+  <div class="role">Advect a cloud of particles with <code>ode45</code>.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>flowSolution = integrate_flow(flow, initialPosition, useEoV, verbose)</code></dd>
+    <dt>Flow struct</dt>
+    <dd>Fields used: <code>derivative</code>, <code>timespan</code>, <code>coupledIntegration</code> (default <code>true</code>), <code>odeSolverOptions</code>, <code>cgStrainMethod.name</code>.</dd>
+    <dt>Modes</dt>
+    <dd>
+      <strong>Coupled:</strong> one <code>ode45</code> on the stacked state of all particles. Fastest for large grids but memory-heavy.<br>
+      <strong>Uncoupled:</strong> one <code>ode45</code> per particle, parallelised with <code>parfor</code>. Memory-friendly.
+    </dd>
+    <dt>EoV</dt>
+    <dd>If <code>useEoV = true</code>, the initial state for each particle is augmented with an identity Jacobian flat-packed to 4 entries, and the ODE integrates position + flow-map gradient together (see <a href="math.html#flow-map">Math §1</a>).</dd>
+  </dl>
+</div>
+
+<div class="fn-card" id="apply_periodic_bc">
+  <h4>apply_periodic_bc <span class="sub-tag tag-util">util</span></h4>
+  <div class="role">Wrap positions across periodic axes.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>[posPeriodic, wrapIdx] = apply_periodic_bc(position, periodicBc, domain)</code></dd>
+    <dt>Formula</dt>
+    <dd>For axis $m$ with $\text{periodicBc}(m) = \text{true}$:
+      $\;\; p_{\text{new}}(m) = \text{mod}\!\bigl(p(m) - \text{dom}_{\min,m},\, L_m\bigr) + \text{dom}_{\min,m}$.</dd>
+    <dt>Limitation</dt>
+    <dd>Only the x-axis is implemented; a y-periodic request is fatal.</dd>
+  </dl>
+</div>
+
+<!-- ============ CG / FTLE ============ -->
+<h2 id="cg">2. Cauchy-Green strain &amp; FTLE</h2>
+
+<div class="fn-card" id="eig_cgStrain">
+  <h4>eig_cgStrain <span class="sub-tag tag-util">core</span></h4>
+  <div class="role">The workhorse. Computes eigenvalues and eigenvectors of $C = \nabla F^\top \nabla F$ on the whole grid.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>[cgV, cgD] = eig_cgStrain(derivative, domain, resolution, timespan, …)</code></dd>
+    <dt>Key options</dt>
+    <dd>
+      <code>'method'</code>&nbsp;: <code>'finiteDifference'</code> (default) or <code>'equationOfVariation'</code>.<br>
+      <code>'auxGridRelDelta'</code>&nbsp;(default $10^{-2}$) — spacing of auxiliary grid used to compute $\nabla F$.<br>
+      <code>'eigenvalueFromMainGrid'</code>&nbsp;(default <code>true</code>) — compute eigenvalues on the main grid, eigenvectors on the auxiliary grid.<br>
+      <code>'incompressible'</code> — force $\lambda_1\cdot\lambda_2 = 1$.<br>
+      <code>'odeSolverOptions'</code> — <code>odeset</code> struct.
+    </dd>
+    <dt>Math (finite-difference mode)</dt>
+    <dd>For every main-grid point $\mathbf{x}_0$, 4 auxiliary seeds at $\mathbf{x}_0 \pm \delta \hat{e}_x$ and $\mathbf{x}_0 \pm \delta \hat{e}_y$ are advected. Then
+      $$ \nabla F_{ij} \approx \frac{F_i(\mathbf{x}_0 + \delta \hat e_j) - F_i(\mathbf{x}_0 - \delta \hat e_j)}{2\delta}. $$
+      Finally $C_{11} = F_{11}^2 + F_{21}^2$, $C_{12} = F_{11}F_{12} + F_{21}F_{22}$, $C_{22} = F_{12}^2 + F_{22}^2$; its $2\times 2$ spectrum is analytic.</dd>
+    <dt>Internals</dt>
+    <dd>
+      <code>ode45_vector</code> — coupled ODE advection of all seeds at once.<br>
+      <code>auxiliary_position</code> — build the 8-column auxiliary grid.<br>
+      <code>compute_cgStrain</code> — assemble $C$ from final positions.<br>
+      <code>eig_array</code> — $2\times 2$ symmetric eigen-solver (arrayfun-friendly).<br>
+      <code>negative_to_nan</code> — tag non-positive-definite points.
+    </dd>
+    <dt>Output layout</dt>
+    <dd>
+      <code>cgD</code> — $N\times 2$: $[\lambda_1, \lambda_2]$ with $\lambda_1 \le \lambda_2$.<br>
+      <code>cgV</code> — $N\times 4$: $[\xi_{1x}, \xi_{1y}, \xi_{2x}, \xi_{2y}]$.
+    </dd>
+  </dl>
+</div>
+
+<div class="fn-card" id="ftle">
+  <h4>ftle <span class="sub-tag tag-util">util</span></h4>
+  <div class="role">Finite-Time Lyapunov Exponent from the largest Cauchy-Green eigenvalue.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>ftleField = ftle(max_eigenvalue, timespan)</code></dd>
+    <dt>Formula</dt>
+    <dd>$\Lambda_{t_0}^{t}(\mathbf{x}_0) = \dfrac{1}{2\,|t-t_0|}\,\ln \lambda_2(\mathbf{x}_0)$</dd>
+    <dt>Usage</dt>
+    <dd><code>ftleField = ftle(cgD(:,2), diff(timespan));</code></dd>
+  </dl>
+</div>
+
+<!-- ============ HYPERBOLIC ============ -->
+<h2 id="hyperbolic">3. Hyperbolic LCS — shrink &amp; stretch lines</h2>
+
+<div class="fn-card" id="seed_curves">
+  <h4>seed_curves_from_lambda_max <span class="sub-tag tag-hyp">hyperbolic</span></h4>
+  <div class="role">Place curves at local <em>extrema</em> of an eigenvalue field and integrate the matching eigenvector line.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>[curves, seeds] = seed_curves_from_lambda_max(distance, curveMaxLength, cgEigenvalue, cgEigenvector, flowDomain, flowResolution, …)</code></dd>
+    <dt>Arguments</dt>
+    <dd>
+      <code>distance</code> — minimum separation between seeds (prevents curve overlap).<br>
+      <code>curveMaxLength</code> — arc-length cap per direction.<br>
+      <code>cgEigenvalue</code> — pass <code>cgD(:,2)</code> for shrink, <code>-cgD(:,1)</code> for stretch.<br>
+      <code>cgEigenvector</code> — matching pair: <code>cgV(:,1:2)</code> for $\xi_1$ or <code>cgV(:,3:4)</code> for $\xi_2$.<br>
+      <code>'periodicBc'</code>, <code>'nMaxCurves'</code>, <code>'odeSolverOptions'</code>.
+    </dd>
+    <dt>Algorithm</dt>
+    <dd>
+      (1) find all local maxima on the grid via <code>local_max2D_gridded</code> with a circular-mask distance threshold;<br>
+      (2) sort descending; for each maximum not yet "covered" by previous curves,<br>
+      (3) integrate the eigenvector field forward <em>and</em> backward from the seed with <code>integrate_line</code>;<br>
+      (4) concatenate the two halves;<br>
+      (5) flag a circular neighbourhood around every point on the new curve so later seeds cannot start there.
+    </dd>
+    <dt>Edge handling</dt>
+    <dd>If the seed lies on the domain boundary, the code checks the eigenvector sign there and skips the integration direction that would immediately leave the domain.</dd>
+    <dt>Theory link</dt>
+    <dd>Implements conditions (2) + (3) of the repelling-LCS theorem (<a href="math.html#hyperbolic">Math §4</a>).</dd>
+  </dl>
+</div>
+
+<div class="fn-card" id="integrate_line">
+  <h4>integrate_line <span class="sub-tag tag-util">core</span></h4>
+  <div class="role">Generic integrator for <em>non-orientable</em> vector fields. The engine behind every strain-line and λ-line integration.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>[position, iEvent, largeAngle] = integrate_line(timespan, initCond, domain, resolution, periodicBc, vectorGrid, odeOpts, [poincareSection], 'checkDiscontinuity', true/false)</code></dd>
+    <dt>Non-orientability handling</dt>
+    <dd>Uses a <code>valueHandle</code> to carry the previous vector direction into the ODE output function. At each step,
+      $$ \mathbf{v}_{\text{new}} \leftarrow \operatorname{sign}(\mathbf{v}_{\text{prev}}\cdot \mathbf{v}_{\text{new}})\,\mathbf{v}_{\text{new}}. $$
+      This keeps the integrated curve coherent even though eigenvectors only have directional (not vector) meaning.</dd>
+    <dt>Discontinuity detection</dt>
+    <dd>At each position, the four vectors at the enclosing cell corners are compared. If any pair subtends an angle &gt; π/2, the cell is flagged and the interpolant is rebuilt with locally sign-flipped neighbours, yielding a continuous interpolant for that cell.</dd>
+    <dt>Event types (returned as <code>iEvent</code>)</dt>
+    <dd>
+      <code>0</code>: no termination (hit <code>timespan(2)</code>)<br>
+      <code>1</code>: crossed the Poincaré section (closed orbit candidate)<br>
+      <code>2</code>: left the domain<br>
+      <code>3</code>: hit NaN in the vector field
+    </dd>
+  </dl>
+</div>
+
+<div class="fn-card" id="remove_strain_in_elliptic">
+  <h4>remove_strain_in_elliptic <span class="sub-tag tag-hyp">hyperbolic</span></h4>
+  <div class="role">Trim shrink/stretch lines that enter an elliptic LCS boundary.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>strainlinePosition = remove_strain_in_elliptic(strainlinePosition, ellipticLcs)</code></dd>
+    <dt>Algorithm</dt>
+    <dd>For each strainline, the points inside the elliptic boundary (via <code>inpolygon</code>) are identified. The curve is split around the first and last "inside" points; the two outside segments are kept, the inside portion discarded.</dd>
+    <dt>Caveat</dt>
+    <dd>Assumes at most one crossing per strainline (flagged in source). If a strainline enters and exits the elliptic region multiple times, pieces may be lost.</dd>
+  </dl>
+</div>
+
+<!-- ============ ELLIPTIC ============ -->
+<h2 id="elliptic">4. Elliptic LCS — λ-lines &amp; Poincaré orbits</h2>
+
+<div class="fn-card" id="lambda_line">
+  <h4>lambda_line <span class="sub-tag tag-ell">elliptic</span></h4>
+  <div class="role">Build the generalised $\eta_\lambda^\pm$ vector fields, pointwise.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>[etaPos, etaNeg] = lambda_line(cgV, cgD, lambda, 'forceComplexNaN', forceComplexNaN)</code></dd>
+    <dt>Formula (Haller &amp; Beron-Vera 2013, Eq. 3.2)</dt>
+    <dd>$ \eta_\lambda^\pm = \sqrt{\dfrac{\lambda_2-\lambda^2}{\lambda_2-\lambda_1}}\,\xi_1 \pm \sqrt{\dfrac{\lambda^2-\lambda_1}{\lambda_2-\lambda_1}}\,\xi_2 $</dd>
+    <dt>Outputs</dt>
+    <dd><code>etaPos, etaNeg</code> — each $N\times 2$.</dd>
+    <dt>Option</dt>
+    <dd><code>'forceComplexNaN'</code>: when $\lambda^2$ lies outside $[\lambda_1, \lambda_2]$ the square roots become imaginary; setting this to <code>true</code> replaces those points with NaN.</dd>
+  </dl>
+</div>
+
+<div class="fn-card" id="poincare_closed_orbit">
+  <h4>poincare_closed_orbit <span class="sub-tag tag-ell">elliptic</span></h4>
+  <div class="role">Find closed orbits of a single η-field through a single Poincaré section.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>[closedOrbits, orbits, hFig] = poincare_closed_orbit(domain, resolution, vectorField, poincareSection, …)</code></dd>
+    <dt>Poincaré-section struct</dt>
+    <dd>
+      <code>endPosition</code>: $2\times 2$, rows are the two endpoints.<br>
+      <code>numPoints</code>: how many seeds along the section.<br>
+      <code>integrationLength</code>: <code>[0, orbitMaxLength]</code> cap on integration time.
+    </dd>
+    <dt>Key options</dt>
+    <dd>
+      <code>'nBisection'</code> (default 5) — root-finding refinement steps.<br>
+      <code>'dThresh'</code> (default $10^{-2}$) — reject zero-crossings whose neighbours have return distance larger than this fraction of section length.<br>
+      <code>'showGraph'</code> — plot the Poincaré return-distance map.
+    </dd>
+    <dt>Algorithm summary</dt>
+    <dd>(i) seed, integrate until back to $\Sigma$; (ii) rotate to align $\Sigma$ with x-axis; (iii) find zero-crossings of "return minus initial" coordinate; (iv) refine with bisection; (v) retain roots passing the neighbour-distance filter; (vi) integrate and sort orbits innermost → outermost.</dd>
+  </dl>
+</div>
+
+<div class="fn-card" id="poincare_closed_orbit_multi">
+  <h4>poincare_closed_orbit_multi <span class="sub-tag tag-ell">elliptic</span></h4>
+  <div class="role">Loop <code>poincare_closed_orbit</code> over multiple sections <em>and</em> both η-fields.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>[closedOrbits, orbits] = poincare_closed_orbit_multi(domain, resolution, etaPos, etaNeg, PSList, …)</code></dd>
+    <dt>Output layout</dt>
+    <dd>
+      <code>closedOrbits{m}{1}</code>: list of closed orbits (innermost → outermost) around section $m$ via $\eta^+$.<br>
+      <code>closedOrbits{m}{2}</code>: same via $\eta^-$.
+    </dd>
+  </dl>
+</div>
+
+<div class="fn-card" id="poincare_closed_orbit_range">
+  <h4>poincare_closed_orbit_range <span class="sub-tag tag-ell">elliptic</span></h4>
+  <div class="role">The outermost loop — sweep a range of λ values.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>[clPos, clNeg] = poincare_closed_orbit_range(domain, resolution, cgV, cgD, lambda, PSList, …)</code></dd>
+    <dt>Output layout</dt>
+    <dd>Cell arrays of size <code>[nLambda, nPoincareSection]</code>. Element <code>{iLambda, iPs}</code> holds the closed-orbit list returned by <code>poincare_closed_orbit_multi</code>.</dd>
+  </dl>
+</div>
+
+<div class="fn-card" id="elliptic_lcs">
+  <h4>elliptic_lcs <span class="sub-tag tag-ell">elliptic</span></h4>
+  <div class="role">Final selection: pick the largest-area outermost orbit per Poincaré section.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>ellipticLcs = elliptic_lcs(closedLambdaLine)</code></dd>
+    <dt>Algorithm</dt>
+    <dd>For each Poincaré section, iterate over all λ values, compute <code>polyarea</code> of the outermost closed orbit, and retain the one with maximum area. Sections with no closed orbit at any λ are dropped.</dd>
+  </dl>
+</div>
+
+<!-- ============ DIAGNOSTIC / UTIL ============ -->
+<h2 id="diagnostic">5. Diagnostics &amp; utilities</h2>
+
+<div class="fn-card" id="eig_error">
+  <h4>eig_error <span class="sub-tag tag-util">diagnostic</span></h4>
+  <div class="role">Residual of the eigenvalue problem.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>e = eig_error(A, V, D)</code></dd>
+    <dt>Formula</dt>
+    <dd>$e_i = \|(A - D_{ii} I)\,v_i\|$</dd>
+  </dl>
+</div>
+
+<div class="fn-card" id="cgStrain_stats">
+  <h4>cgStrain_stats <span class="sub-tag tag-util">diagnostic</span></h4>
+  <div class="role">Printed summary of a Cauchy-Green computation.</div>
+  <dl>
+    <dt>Reports</dt>
+    <dd>
+      • Number of negative eigenvalues (should be 0 — indicates integration error).<br>
+      • Number of NaN values.<br>
+      • Min/max/mean/median of $\|A v - \lambda v\|$ (Eigensystem residual).<br>
+      • Min/max/mean/median of $\lambda_1 \lambda_2$ (should be 1 for incompressible flows).<br>
+      • $1 - \max \lambda_1$ and mean $|\det C - 1|$.
+    </dd>
+  </dl>
+</div>
+
+<div class="fn-card" id="angle_change">
+  <h4>angle_change <span class="sub-tag tag-util">diagnostic</span></h4>
+  <div class="role">Angular change of a vector field between neighbours.</div>
+  <dl>
+    <dt>Signature</dt>
+    <dd><code>[thetaX, thetaY, thetaMax] = angle_change(vector)</code></dd>
+    <dt>Formula</dt>
+    <dd>$ \theta = \arccos\!\bigl(\tfrac{\mathbf{a}\cdot\mathbf{b}}{\|\mathbf{a}\|\|\mathbf{b}\|}\bigr) $ between cells $(i,j)$ and $(i+1,j)$ or $(i,j+1)$.</dd>
+    <dt>Use</dt>
+    <dd>Feed the result to <code>print_theta_hist</code> for a histogram, or plot $\theta_{\max}$ as a 2-D field to spot discontinuity patches.</dd>
+  </dl>
+</div>
+
+<div class="fn-card" id="print_theta_hist">
+  <h4>print_theta_hist <span class="sub-tag tag-util">diagnostic</span></h4>
+  <div class="role">Tabulate a histogram of angle changes in 10°-wide bins from 0° to 180°.</div>
+</div>
+
+<div class="fn-card" id="valueHandle">
+  <h4>valueHandle <span class="sub-tag tag-util">util</span></h4>
+  <div class="role">One-property handle class used to pass mutable state through <code>ode45</code> output/event callbacks.</div>
+  <dl>
+    <dt>Why it exists</dt>
+    <dd>MATLAB anonymous functions capture workspace values by copy. To track "the previous vector direction" across ODE callbacks, <code>integrate_line</code> needs a handle; rather than depending on global state, LCStool uses this tiny class.</dd>
+  </dl>
+</div>
+
+<div class="page-nav">
+  <a href="pipeline.html" class="prev"><span class="label">← Prev</span>Pipeline</a>
+  <a href="plotting.html" class="next"><span class="label">Next →</span>Plotting</a>
+</div>
+
+<footer class="page-foot">
+  Generated for the Serra lab reference notes.
+</footer>
+</main>
+
+</div>
+<script src="assets/nav.js"></script>
+</body>
+</html>
