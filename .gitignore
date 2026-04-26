@@ -14,3 +14,8 @@ desktop.ini
 # Logs and databases
 *.log
 *.sqlite
+*.gz
+*.aux
+*.out
+
+# Documents

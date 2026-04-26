@@ -1,0 +1,123 @@
+\documentclass[../main.tex]{subfiles}
+
+\begin{document}
+
+\section{LAVD Basics}
+
+\subsection{The Algorithm}
+
+The Lagrangian-Averaged Vorticity Deviation (LAVD), introduced by Haller et al.\ \cite{haller2016defining}, identifies rotationally coherent vortices as nested tubular level sets of a scalar field computed along fluid trajectories. We first state the definition, then list the algorithmic steps needed to set up the vortex-detection tool.
+
+\begin{definition}[Lagrangian-Averaged Vorticity Deviation]
+Let $v(x,t)$ be a velocity field on a (possibly time-dependent) spatial domain $U(t)\subset\mathbb{R}^n$ with $n\in\{2,3\}$ \mn{Planar flow or 3D flow. }, and let $X(s;t_0,x_0)$ denote the trajectory at time $s$ of the fluid particle released from $x_0$ at time $t_0$. The LAVD over $[t_0, t_1]$ is
+\begin{equation}
+    \mathrm{LAVD}_{t_0}^{t_1}(x_0) \;=\; \int_{t_0}^{t_1} \bigl|\omega_3\bigl(X(s;t_0,x_0),\,s\bigr) - \bar{\omega}_3(s)\bigr|\,ds,
+    \label{eq:LAVD}
+\end{equation}
+where $\omega_3$ is the out-of-plane component of the vorticity $\omega = \nabla \times v$, and $\bar{\omega}_3(s)$ is the instantaneous spatial mean
+\begin{equation}
+    \bar{\omega}_3(s) \;=\; \frac{1}{\mathrm{Vol}(U(s))} \int_{U(s)} \omega_3(x,s)\,dx.
+    \label{eq:mean_vorticity}
+\end{equation}
+\end{definition}
+
+\begin{remark}[Objectivity]
+Subtracting the spatial mean $\bar{\omega}_3$ is what makes the LAVD \emph{objective}: the integrand in \eqref{eq:LAVD} is invariant under time-dependent rotations and translations of the reference frame. Vortices detected from LAVD level sets therefore do not depend on the observer --- a property that standard Eulerian diagnostics such as the $Q$- or $\lambda_2$-criteria lack.
+\end{remark}
+
+Following Haller et al.\ \cite[p.~151]{haller2016defining}, the LAVD vortex-detection toolbox has the overall structure given in Algorithm~\ref{alg:LAVD}. The two subsequent subsections expand the two halves --- computing the LAVD field and extracting coherent-vortex boundaries --- with practical implementation details.
+
+\begin{algorithm}[H]
+\caption{LAVD vortex-detection toolbox (general structure).}
+\label{alg:LAVD}
+\begin{algorithmic}[1]
+\Require Velocity field $v(x,t)$ on $U(t)\times[t_0,t_1]$; seed grid $\{x_0^{(i)}\}_{i=1}^{N}\subset U(t_0)$; convexity tolerance $d_{\max}$.
+\Ensure Vortex centers $\{c_k\}$ and vortex boundaries $\{\partial V_k\}$ over $[t_0,t_1]$.
+\Statex
+\State \textbf{// Part (i): compute the LAVD scalar field}
+\For{each output time $s \in [t_0,t_1]$}
+    \State compute the vorticity $\omega_3(x,s) = (\nabla\times v)_3$ on the Eulerian grid
+    \State compute the spatial mean $\bar\omega_3(s) = \dfrac{1}{\mathrm{Vol}(U(s))}\displaystyle\int_{U(s)}\omega_3(x,s)\,dx$
+\EndFor
+\For{each seed $x_0^{(i)}$}
+    \State advect the trajectory $X(s;t_0,x_0^{(i)})$ by integrating $\dot X = v(X,t)$ from $t_0$ to $t_1$
+    \State interpolate $\omega_3$ at $X(s;t_0,x_0^{(i)})$ to obtain the deviation $\omega_3(X,s)-\bar\omega_3(s)$
+    \State $\mathrm{LAVD}(x_0^{(i)}) \gets \displaystyle\int_{t_0}^{t_1}\bigl|\omega_3(X(s;t_0,x_0^{(i)}),s)-\bar\omega_3(s)\bigr|\,ds$
+\EndFor
+\Statex
+\State \textbf{// Part (ii): extract rotationally coherent vortices}
+\State locate local maxima of $\mathrm{LAVD}$ $\to$ candidate vortex centers $\{c_k\}$
+\For{each center $c_k$}
+    \For{contour level $c$ decreasing from $\mathrm{LAVD}(c_k)$}
+        \State extract iso-contour $\Gamma_c$ of $\mathrm{LAVD}$ (e.g.\ MATLAB \texttt{contourc})
+        \If{$\Gamma_c$ is closed, encloses only $c_k$, and convexity deficiency $\leq d_{\max}$}
+            \State mark $\Gamma_c$ as admissible
+        \Else
+            \State \textbf{break} \Comment{outermost admissible contour found}
+        \EndIf
+    \EndFor
+    \State $\partial V_k \gets$ outermost admissible contour around $c_k$
+\EndFor
+\State \Return $\{c_k\}$, $\{\partial V_k\}$
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection*{Step (i) --- Compute the LAVD field}
+
+\begin{result}[Computing $\mathrm{LAVD}_{t_0}^{t_1}(x_0)$]
+\textbf{Input:} velocity field $v(x,t)$ on an Eulerian grid covering $U(t)$ and extraction window $[t_0,t_1]$.
+\begin{enumerate}
+    \item[(I.1)] \textbf{Seed grid.} Place a dense uniform grid of initial conditions $\{x_0^{(i)}\}$ over $U(t_0)$.
+    \item[(I.2)] \textbf{Advect trajectories.} For each seed, integrate $\dot X = v(X,t)$ with $X(t_0)=x_0^{(i)}$ from $t_0$ to $t_1$ (e.g.\ RK4 with cubic space / linear time interpolation of $v$) to obtain $X(s;t_0,x_0^{(i)})$.
+    \item[(I.3)] \textbf{Compute vorticity.} On the Eulerian grid at every output time $s$, evaluate
+    \[\omega_3(x,s) \;=\; \partial_x v_2 - \partial_y v_1\]
+    by finite differences.
+    \item[(I.4)] \textbf{Compute spatial mean.} Evaluate $\bar{\omega}_3(s)$ via \eqref{eq:mean_vorticity} (trapezoidal quadrature over $U(s)$).
+    \item[(I.5)] \textbf{Sample along trajectories.} Interpolate $\omega_3(\cdot,s)$ at $X(s;t_0,x_0^{(i)})$ to obtain the time series $\omega_3(X(s),s) - \bar{\omega}_3(s)$.
+    \item[(I.6)] \textbf{Time integral.} Apply trapezoidal (or Simpson) quadrature to \eqref{eq:LAVD}. Writing the result back onto the seed location yields the Lagrangian scalar field $\mathrm{LAVD}_{t_0}^{t_1}(x_0)$.
+\end{enumerate}
+\textbf{Output:} scalar field $\mathrm{LAVD}_{t_0}^{t_1}:U(t_0)\to\mathbb{R}_{\geq 0}$.
+\end{result}
+
+\subsubsection*{Step (ii) --- Extract rotationally coherent vortices}
+
+\begin{definition}[Rotationally coherent vortex \cite{haller2016defining}]
+A rotationally coherent vortex over $[t_0,t_1]$ is the largest outermost closed, convex, nearly-tubular level set of $\mathrm{LAVD}_{t_0}^{t_1}$ that surrounds a local maximum. The maximum itself is the \emph{vortex center}, and the outermost admissible contour is the \emph{vortex boundary}.
+\end{definition}
+
+\begin{result}[Extracting vortex boundaries]
+\begin{enumerate}
+    \item[(II.1)] \textbf{Locate vortex centers.} Identify local maxima of $\mathrm{LAVD}_{t_0}^{t_1}$ by searching for grid points whose value exceeds all neighbors within a chosen stencil (e.g.\ $3\times 3$). Discard maxima whose prominence falls below a noise threshold.
+    \item[(II.2)] \textbf{Sweep level sets.} For a decreasing sequence of contour values $c$ from $\max\mathrm{LAVD}$ down to a chosen floor, extract iso-contours with MATLAB's \texttt{contourc} (or \texttt{contour}).
+    \item[(II.3)] \textbf{Test admissibility.} Retain only contours that are
+    \begin{itemize}
+        \item closed (endpoints coincide within tolerance),
+        \item convex up to a small convexity-deficiency tolerance $d_{\max}$ (arclength of the contour minus arclength of its convex hull, normalized by the hull arclength),
+        \item enclosing exactly one vortex center.
+    \end{itemize}
+    \item[(II.4)] \textbf{Select outermost contour.} For each vortex center, the vortex boundary is the outermost (lowest $c$) contour still satisfying (II.3); the nested admissible contours inside it define the coherent vortex.
+\end{enumerate}
+\end{result}
+
+\begin{fact}[Practical parameters]
+\begin{itemize}
+    \item \textbf{Integration window $[t_0,t_1]$.} On the order of a characteristic turnover time of the expected vortex; too short yields noisy LAVD, too long may break coherence.
+    \item \textbf{Grid resolution.} The seed grid should resolve the smallest vortex of interest (tens of points across its diameter).
+    \item \textbf{Convexity deficiency $d_{\max}$.} Typical values $d_{\max}\in[10^{-3},10^{-1}]$; smaller values enforce stricter circularity.
+    \item \textbf{Domain $U(t)$.} For bounded domains $U$ is fixed; for open flows, $U(t)$ is the image of a reference region under the flow map.
+\end{itemize}
+\end{fact}
+
+\begin{reminder}[2D vs.\ 3D]
+In two dimensions $\omega_3$ is simply the scalar vorticity $\partial_x v_2 - \partial_y v_1$. In three dimensions \eqref{eq:LAVD} is generalized by replacing $|\omega_3 - \bar\omega_3|$ with the norm of the full vorticity deviation $\|\omega(X(s),s) - \bar\omega(s)\|$, and vortex boundaries become tubular (quasi-cylindrical) surfaces rather than planar curves.
+\end{reminder}
+
+\bibliographystyle{plain}
+\begin{thebibliography}{9}
+\bibitem{haller2016defining}
+G.~Haller, A.~Hadjighasem, M.~Farazmand, and F.~Huhn.
+\newblock Defining coherent vortices objectively from the vorticity.
+\newblock \emph{Journal of Fluid Mechanics}, 795:136--173, 2016.
+\end{thebibliography}
+
+\end{document}
